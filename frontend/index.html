@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TalkBridge</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- HEADER -->
+    <header class="header">
+
+        <div class="brand">
+            <div class="logo">TB</div>
+
+            <div>
+                <h1>TalkBridge</h1>
+                <p>Speak without limits</p>
+            </div>
+        </div>
+
+        <button class="settings-button" id="settingsButton">
+            ⚙
+        </button>
+
+    </header>
+
+
+    <!-- MAIN -->
+    <main>
+
+        <section class="hero">
+
+            <div class="online-dot"></div>
+
+            <p class="status">
+                AI translation
+            </p>
+
+            <h2>
+                Hello 👋
+            </h2>
+
+            <p>
+                Translate between two languages using text or your voice.
+            </p>
+
+        </section>
+
+
+        <!-- LANGUAGE SELECTOR -->
+        <section class="language-card">
+
+            <div class="language-side">
+
+                <span class="language-label">
+                    FROM
+                </span>
+
+                <button
+                    class="language-button"
+                    id="fromLanguageButton"
+                >
+                    <span id="fromFlag">🇬🇧</span>
+                    <span id="fromLanguage">English</span>
+                    <span class="arrow">⌄</span>
+                </button>
+
+            </div>
+
+
+            <button
+                class="swap-button"
+                id="swapButton"
+                title="Swap languages"
+            >
+                ⇄
+            </button>
+
+
+            <div class="language-side">
+
+                <span class="language-label">
+                    TO
+                </span>
+
+                <button
+                    class="language-button"
+                    id="toLanguageButton"
+                >
+                    <span id="toFlag">🇨🇳</span>
+                    <span id="toLanguage">Chinese</span>
+                    <span class="arrow">⌄</span>
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- INPUT -->
+        <section class="translation-card">
+
+            <div class="card-header">
+
+                <span id="inputLanguageTitle">
+                    English
+                </span>
+
+                <span id="characterCount">
+                    0 / 1000
+                </span>
+
+            </div>
+
+
+            <textarea
+                id="textInput"
+                maxlength="1000"
+                placeholder="Type something to translate..."
+            ></textarea>
+
+
+            <div class="input-actions">
+
+                <button
+                    class="icon-button"
+                    id="clearButton"
+                    title="Clear"
+                >
+                    ✕
+                </button>
+
+                <button
+                    class="mic-button"
+                    id="micButton"
+                    title="Speak"
+                >
+                    🎤
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- TRANSLATE BUTTON -->
+        <button
+            class="translate-button"
+            id="translateButton"
+        >
+            <span>Translate</span>
+            <span>→</span>
+        </button>
+
+
+        <!-- OUTPUT -->
+        <section
+            class="translation-card output-card"
+            id="outputCard"
+        >
+
+            <div class="card-header">
+
+                <span id="outputLanguageTitle">
+                    Chinese
+                </span>
+
+                <button
+                    class="speaker-button"
+                    id="speakerButton"
+                    title="Play translation"
+                >
+                    🔊
+                </button>
+
+            </div>
+
+
+            <div
+                class="translation-result"
+                id="translationResult"
+            >
+                Your translation will appear here.
+            </div>
+
+        </section>
+
+
+        <!-- CONVERSATION -->
+        <section class="conversation-card">
+
+            <div class="conversation-info">
+
+                <div class="conversation-icon">
+                    💬
+                </div>
+
+                <div>
+
+                    <h3>
+                        Conversation Mode
+                    </h3>
+
+                    <p>
+                        Talk naturally between two languages.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="conversation-button"
+                id="conversationButton"
+            >
+                Start Conversation
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <!-- LANGUAGE MODAL -->
+    <div
+        class="modal hidden"
+        id="languageModal"
+    >
+
+        <div class="modal-box">
+
+            <div class="modal-header">
+
+                <h3 id="languageModalTitle">
+                    Select Language
+                </h3>
+
+                <button
+                    class="close-button"
+                    id="closeLanguageModal"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <input
+                type="text"
+                id="languageSearch"
+                class="search-input"
+                placeholder="Search language..."
+            >
+
+
+            <div
+                class="language-list"
+                id="languageList"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CONVERSATION MODAL -->
+    <div
+        class="modal hidden"
+        id="conversationModal"
+    >
+
+        <div class="modal-box conversation-box">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <h3>
+                        Conversation Mode
+                    </h3>
+
+                    <p class="modal-subtitle">
+                        Talk in either selected language.
+                    </p>
+
+                </div>
+
+                <button
+                    class="close-button"
+                    id="closeConversationModal"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <!-- SELECTED LANGUAGES -->
+            <div class="conversation-languages">
+
+                <div class="conversation-language">
+                    <span id="conversationFromFlag">
+                        🇬🇧
+                    </span>
+
+                    <strong id="conversationFromLanguage">
+                        English
+                    </strong>
+                </div>
+
+
+                <span class="conversation-arrow">
+                    ⇄
+                </span>
+
+
+                <div class="conversation-language">
+                    <span id="conversationToFlag">
+                        🇨🇳
+                    </span>
+
+                    <strong id="conversationToLanguage">
+                        Chinese
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <!-- STATUS -->
+            <div
+                class="conversation-status"
+                id="conversationStatus"
+            >
+                Ready
+            </div>
+
+
+            <!-- LIVE RESULT -->
+            <div
+                class="conversation-messages"
+                id="conversationMessages"
+            >
+
+                <div class="empty-conversation">
+                    Press the microphone to start.
+                </div>
+
+            </div>
+
+
+            <!-- MICROPHONE -->
+            <button
+                class="conversation-mic"
+                id="conversationMic"
+            >
+                <span class="mic-symbol">
+                    🎤
+                </span>
+
+                <span id="conversationMicText">
+                    Start Listening
+                </span>
+            </button>
+
+
+            <p class="conversation-hint">
+                Keep the microphone active while both people speak.
+                Press again to stop.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- SETTINGS -->
+    <div
+        class="modal hidden"
+        id="settingsModal"
+    >
+
+        <div class="modal-box">
+
+            <div class="modal-header">
+
+                <h3>
+                    Settings
+                </h3>
+
+                <button
+                    class="close-button"
+                    id="closeSettingsModal"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <div class="setting-row">
+
+                <div>
+                    <strong>Audio output</strong>
+                    <p>Play translated speech automatically.</p>
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="autoPlay"
+                        checked
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+
+            <div class="setting-row">
+
+                <div>
+                    <strong>Speech speed</strong>
+                    <p>Control translated audio speed.</p>
+                </div>
+
+                <select id="speechSpeed">
+
+                    <option value="0.75">
+                        0.75x
+                    </option>
+
+                    <option value="1" selected>
+                        1.0x
+                    </option>
+
+                    <option value="1.25">
+                        1.25x
+                    </option>
+
+                    <option value="1.5">
+                        1.5x
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- LOADING -->
+    <div
+        class="loading hidden"
+        id="loading"
+    >
+        <div class="spinner"></div>
+        <span id="loadingText">
+            Translating...
+        </span>
+    </div>
+
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
