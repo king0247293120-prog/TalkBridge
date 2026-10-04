@@ -71,7 +71,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 if not OPENAI_API_KEY:
-
     raise RuntimeError(
         "OPENAI_API_KEY was not found.\n\n"
         "Create a .env file inside the backend folder "
@@ -93,33 +92,19 @@ client = OpenAI(
 # MODELS
 # ============================================================
 
-# ------------------------------------------------------------
 # Main text model
-# ------------------------------------------------------------
-#
 # Used for:
 # - Translation
 # - Language detection
-#
-# GPT-6 Luna is designed for efficient,
-# high-volume workloads.
-#
-# ------------------------------------------------------------
 
 TEXT_MODEL = "gpt-6-luna"
 
 
-# ------------------------------------------------------------
 # Speech recognition
-# ------------------------------------------------------------
-
 TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe"
 
 
-# ------------------------------------------------------------
 # Text-to-speech
-# ------------------------------------------------------------
-
 TTS_MODEL = "gpt-4o-mini-tts"
 
 
@@ -140,11 +125,25 @@ app = FastAPI(
 # ============================================================
 # CORS
 # ============================================================
+#
+# IMPORTANT:
+# The deployed TalkBridge frontend is:
+#
+# https://talkbridge-sna0.onrender.com
+#
+# This URL MUST be allowed here so the browser can
+# communicate with the backend.
+#
+# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
+        # LIVE TALKBRIDGE FRONTEND
+        "https://talkbridge-sna0.onrender.com",
+
+        # LOCAL DEVELOPMENT
         "http://localhost:5500",
         "http://127.0.0.1:5500",
 
@@ -224,15 +223,6 @@ SUPPORTED_LANGUAGES = {
 # ============================================================
 # COMMON TRANSCRIPTION LANGUAGE CODES
 # ============================================================
-#
-# These are languages for which we explicitly provide a
-# language code to the transcription API.
-#
-# For Ghanaian languages, we allow the transcription model
-# to determine the speech instead of forcing a potentially
-# unsupported language code.
-#
-# ============================================================
 
 COMMON_TRANSCRIPTION_CODES = {
 
@@ -287,7 +277,6 @@ def clean_text(text: str) -> str:
     """
 
     if not text:
-
         return ""
 
     return " ".join(
@@ -311,9 +300,7 @@ def get_language_name(
     """
 
     if not language_code:
-
         return ""
-
 
     return SUPPORTED_LANGUAGES.get(
         language_code.lower().strip(),
@@ -337,26 +324,19 @@ def get_language_code(
     """
 
     if not language_name:
-
         return ""
-
 
     value = language_name.strip().lower()
 
-
     # Already a code
     if value in SUPPORTED_LANGUAGES:
-
         return value
-
 
     # Language name
     for code, name in SUPPORTED_LANGUAGES.items():
 
         if value == name.lower():
-
             return code
-
 
     return value
 
@@ -370,13 +350,6 @@ def validate_language(
 
     """
     Accepts either a language code or a language name.
-
-    Example:
-
-        en
-        English
-        tw
-        Twi
     """
 
     if not language:
@@ -386,13 +359,11 @@ def validate_language(
             detail="Language was not provided."
         )
 
-
     language_clean = (
         language
         .strip()
         .lower()
     )
-
 
     # Language code
     if language_clean in SUPPORTED_LANGUAGES:
@@ -401,7 +372,6 @@ def validate_language(
             language_clean
         ]
 
-
     # Language name
     for code, name in SUPPORTED_LANGUAGES.items():
 
@@ -409,12 +379,7 @@ def validate_language(
 
             return name
 
-
-    # We don't completely reject unknown languages.
-    #
-    # This allows the model to handle additional languages
-    # where appropriate.
-
+    # Allow additional languages
     return language.strip()
 
 
@@ -440,12 +405,9 @@ def normalize_language_code(
     """
 
     if not value:
-
         return ""
 
-
     value = value.strip().lower()
-
 
     # --------------------------------------------------------
     # Look for exact language codes
@@ -460,7 +422,6 @@ def normalize_language_code(
 
             return code
 
-
     # --------------------------------------------------------
     # Look for full language names
     # --------------------------------------------------------
@@ -470,7 +431,6 @@ def normalize_language_code(
         if name.lower() in value:
 
             return code
-
 
     return value
 
@@ -555,14 +515,12 @@ async def translate(
         request.text
     )
 
-
     if not text:
 
         raise HTTPException(
             status_code=400,
             detail="Please provide text to translate."
         )
-
 
     # --------------------------------------------------------
     # Validate languages
@@ -575,7 +533,6 @@ async def translate(
     target_language = validate_language(
         request.target_language
     )
-
 
     # --------------------------------------------------------
     # Same language
@@ -596,7 +553,6 @@ async def translate(
 
             "target_language": target_language,
         }
-
 
     # --------------------------------------------------------
     # Translation prompt
@@ -658,9 +614,8 @@ TEXT:
 {text}
 """
 
-
     # --------------------------------------------------------
-    # Call GPT-6 Luna
+    # Call text model
     # --------------------------------------------------------
 
     try:
@@ -678,12 +633,10 @@ TEXT:
             },
         )
 
-
         translation = (
             response.output_text
             .strip()
         )
-
 
         if not translation:
 
@@ -694,7 +647,6 @@ TEXT:
                     "returned an empty response."
                 )
             )
-
 
         return {
 
@@ -707,11 +659,9 @@ TEXT:
             "target_language": target_language,
         }
 
-
     except HTTPException:
 
         raise
-
 
     except Exception as e:
 
@@ -719,7 +669,6 @@ TEXT:
             "TRANSLATION ERROR:",
             repr(e)
         )
-
 
         raise HTTPException(
 
@@ -759,9 +708,7 @@ async def transcribe_speech(
             ),
         )
 
-
     audio_bytes = await file.read()
-
 
     if not audio_bytes:
 
@@ -774,7 +721,6 @@ async def transcribe_speech(
             ),
         )
 
-
     # --------------------------------------------------------
     # Determine extension
     # --------------------------------------------------------
@@ -784,19 +730,15 @@ async def transcribe_speech(
         or "audio.webm"
     )
 
-
     suffix = Path(
         original_filename
     ).suffix
-
 
     if not suffix:
 
         suffix = ".webm"
 
-
     temp_path = None
-
 
     try:
 
@@ -818,7 +760,6 @@ async def transcribe_speech(
 
             temp_path = temp_file.name
 
-
         # ----------------------------------------------------
         # Prepare transcription request
         # ----------------------------------------------------
@@ -828,7 +769,6 @@ async def transcribe_speech(
             "rb"
         )
 
-
         try:
 
             transcription_options = {
@@ -837,7 +777,6 @@ async def transcribe_speech(
 
                 "file": transcription_file,
             }
-
 
             # ------------------------------------------------
             # Use explicit language for common languages
@@ -851,7 +790,6 @@ async def transcribe_speech(
                 else ""
             )
 
-
             if (
                 language_code
                 in COMMON_TRANSCRIPTION_CODES
@@ -860,7 +798,6 @@ async def transcribe_speech(
                 transcription_options[
                     "language"
                 ] = language_code
-
 
             # ------------------------------------------------
             # Transcribe
@@ -872,11 +809,9 @@ async def transcribe_speech(
                 )
             )
 
-
         finally:
 
             transcription_file.close()
-
 
         # ----------------------------------------------------
         # Extract text
@@ -888,9 +823,7 @@ async def transcribe_speech(
             ""
         )
 
-
         text = clean_text(text)
-
 
         if not text:
 
@@ -903,7 +836,6 @@ async def transcribe_speech(
                     "detected in the audio."
                 ),
             )
-
 
         return {
 
@@ -918,11 +850,9 @@ async def transcribe_speech(
             ),
         }
 
-
     except HTTPException:
 
         raise
-
 
     except Exception as e:
 
@@ -930,7 +860,6 @@ async def transcribe_speech(
             "TRANSCRIPTION ERROR:",
             repr(e)
         )
-
 
         raise HTTPException(
 
@@ -941,7 +870,6 @@ async def transcribe_speech(
                 f"{str(e)}"
             ),
         )
-
 
     finally:
 
@@ -989,9 +917,7 @@ async def conversation_transcribe(
             ),
         )
 
-
     audio_bytes = await file.read()
-
 
     if not audio_bytes:
 
@@ -1005,7 +931,6 @@ async def conversation_transcribe(
             ),
         )
 
-
     # --------------------------------------------------------
     # Determine extension
     # --------------------------------------------------------
@@ -1015,19 +940,15 @@ async def conversation_transcribe(
         or "conversation.webm"
     )
 
-
     suffix = Path(
         original_filename
     ).suffix
-
 
     if not suffix:
 
         suffix = ".webm"
 
-
     temp_path = None
-
 
     try:
 
@@ -1049,7 +970,6 @@ async def conversation_transcribe(
 
             temp_path = temp_file.name
 
-
         # ----------------------------------------------------
         # STEP 1
         # TRANSCRIBE SPEECH
@@ -1069,16 +989,13 @@ async def conversation_transcribe(
                 )
             )
 
-
         text = getattr(
             transcript,
             "text",
             ""
         )
 
-
         text = clean_text(text)
-
 
         # ----------------------------------------------------
         # Nothing detected
@@ -1094,7 +1011,6 @@ async def conversation_transcribe(
 
                 "language": "",
             }
-
 
         # ----------------------------------------------------
         # STEP 2
@@ -1169,9 +1085,8 @@ TEXT:
 {text}
 """
 
-
         # ----------------------------------------------------
-        # Ask GPT-6 Luna
+        # Ask text model
         # ----------------------------------------------------
 
         language_response = (
@@ -1189,13 +1104,11 @@ TEXT:
             )
         )
 
-
         detected_language = (
             normalize_language_code(
                 language_response.output_text
             )
         )
-
 
         # ----------------------------------------------------
         # Return
@@ -1210,14 +1123,12 @@ TEXT:
             "language": detected_language,
         }
 
-
     except Exception as e:
 
         print(
             "CONVERSATION ERROR:",
             repr(e)
         )
-
 
         raise HTTPException(
 
@@ -1228,7 +1139,6 @@ TEXT:
                 f"failed: {str(e)}"
             ),
         )
-
 
     finally:
 
@@ -1266,7 +1176,6 @@ async def text_to_speech(
         request.text
     )
 
-
     if not text:
 
         raise HTTPException(
@@ -1278,7 +1187,6 @@ async def text_to_speech(
                 "for speech generation."
             ),
         )
-
 
     # --------------------------------------------------------
     # Limit speed
@@ -1294,7 +1202,6 @@ async def text_to_speech(
         ),
     )
 
-
     # --------------------------------------------------------
     # Language
     # --------------------------------------------------------
@@ -1302,7 +1209,6 @@ async def text_to_speech(
     language = validate_language(
         request.language
     )
-
 
     # --------------------------------------------------------
     # Instructions
@@ -1324,7 +1230,6 @@ Do not introduce the speech.
 
 Simply speak the provided text.
 """
-
 
     try:
 
@@ -1349,7 +1254,6 @@ Simply speak the provided text.
             )
         )
 
-
         # ----------------------------------------------------
         # Read audio
         # ----------------------------------------------------
@@ -1357,7 +1261,6 @@ Simply speak the provided text.
         audio_data = (
             audio_response.read()
         )
-
 
         if not audio_data:
 
@@ -1370,7 +1273,6 @@ Simply speak the provided text.
                     "returned empty audio."
                 ),
             )
-
 
         # ----------------------------------------------------
         # Return MP3
@@ -1390,11 +1292,9 @@ Simply speak the provided text.
             },
         )
 
-
     except HTTPException:
 
         raise
-
 
     except Exception as e:
 
@@ -1402,7 +1302,6 @@ Simply speak the provided text.
             "TEXT TO SPEECH ERROR:",
             repr(e)
         )
-
 
         raise HTTPException(
 
@@ -1429,7 +1328,6 @@ async def global_exception_handler(
         "UNHANDLED SERVER ERROR:",
         repr(exc)
     )
-
 
     return JSONResponse(
 
