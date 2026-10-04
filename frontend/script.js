@@ -1,4 +1,4 @@
-const API_URL = "https://talkbridge-api.onrender.com/";
+const API_URL = "https://talkbridge-api.onrender.com";
 
 
 // ============================================================
