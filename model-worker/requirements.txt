@@ -1,0 +1,5 @@
+runpod
+transformers>=4.44,<5
+sentencepiece
+accelerate
+safetensors

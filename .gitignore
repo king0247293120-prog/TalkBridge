@@ -1,0 +1,33 @@
+﻿# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded user files
+backend/uploads/
+
+# Node dependencies
+node_modules/
+
+# Temporary Git copies
+.git - Copy/
+.git - Copy (2)/
+.git - Copy - Copy/
+
+# System files
+.DS_Store
+Thumbs.db

@@ -1,1529 +1,2414 @@
-const API_URL = "https://talkbridge-api.onrender.com";
+/*
+=========================================================
+ TALKBRIDGE 2.0
+ Frontend Application Logic
+=========================================================
 
+ LOCAL BACKEND:
+ http://127.0.0.1:8000
 
-// ============================================================
-// LANGUAGES
-// ============================================================
+ DEPLOYED BACKEND:
+ https://talkbridge-api.onrender.com
 
-const languages = [
-    {
-        name: "English",
-        code: "en",
-        flag: "🇬🇧"
-    },
-    {
-        name: "Chinese",
-        code: "zh",
-        flag: "🇨🇳"
-    },
-    {
-        name: "Spanish",
-        code: "es",
-        flag: "🇪🇸"
-    },
-    {
-        name: "French",
-        code: "fr",
-        flag: "🇫🇷"
-    },
-    {
-        name: "German",
-        code: "de",
-        flag: "🇩🇪"
-    },
-    {
-        name: "Portuguese",
-        code: "pt",
-        flag: "🇵🇹"
-    },
-    {
-        name: "Arabic",
-        code: "ar",
-        flag: "🇸🇦"
-    },
-    {
-        name: "Japanese",
-        code: "ja",
-        flag: "🇯🇵"
-    },
-    {
-        name: "Korean",
-        code: "ko",
-        flag: "🇰🇷"
-    },
-    {
-        name: "Italian",
-        code: "it",
-        flag: "🇮🇹"
-    },
-    {
-        name: "Russian",
-        code: "ru",
-        flag: "🇷🇺"
-    },
-    {
-        name: "Hindi",
-        code: "hi",
-        flag: "🇮🇳"
-    },
-    {
-        name: "Turkish",
-        code: "tr",
-        flag: "🇹🇷"
-    },
-    {
-        name: "Dutch",
-        code: "nl",
-        flag: "🇳🇱"
-    },
-    {
-        name: "Swedish",
-        code: "sv",
-        flag: "🇸🇪"
-    },
-    {
-        name: "Polish",
-        code: "pl",
-        flag: "🇵🇱"
-    },
-    {
-        name: "Twi",
-        code: "tw",
-        flag: "🇬🇭"
-    },
-    {
-        name: "Ewe",
-        code: "ee",
-        flag: "🇬🇭"
-    },
-    {
-        name: "Ga",
-        code: "gaa",
-        flag: "🇬🇭"
-    },
-    {
-        name: "Dagbani",
-        code: "dag",
-        flag: "🇬🇭"
-    },
-    {
-        name: "Fante",
-        code: "fat",
-        flag: "🇬🇭"
-    }
+ Change API_BASE_URL when switching between local and
+ deployed backend.
+
+ Never put your OpenAI API key in this file.
+=========================================================
+*/
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+const $ = (id) => document.getElementById(id);
+
+/* =======================================================
+   LANGUAGES
+======================================================= */
+
+const LANGUAGES = [
+  "Auto Detect",
+  "English",
+  "Twi",
+  "Ewe",
+  "Ga",
+  "Dagbani",
+  "Fante",
+  "French",
+  "Spanish",
+  "German",
+  "Chinese",
+  "Arabic",
+  "Japanese",
+  "Korean",
+  "Portuguese",
+  "Hindi",
+  "Italian",
+  "Russian",
+  "Dutch",
+  "Turkish",
+  "Swedish",
+  "Polish"
 ];
 
+/* =======================================================
+   LOCAL STORAGE
+======================================================= */
 
-// ============================================================
-// APPLICATION STATE
-// ============================================================
+const STORAGE_KEYS = {
+  history: "talkbridge_history_v2",
+  saved: "talkbridge_saved_v2",
+  preferences: "talkbridge_preferences_v2"
+};
 
-let fromLanguage = languages[0];
-let toLanguage = languages[1];
+const DEFAULT_PREFERENCES = {
+  source: "Auto Detect",
+  target: "Twi",
+  autoplay: true,
+  speed: 1
+};
 
-let languageSelectionTarget = null;
+let preferences = loadStorage(
+  STORAGE_KEYS.preferences,
+  DEFAULT_PREFERENCES
+);
 
-let mediaRecorder = null;
-let microphoneStream = null;
-let recordedChunks = [];
+let historyItems = loadStorage(STORAGE_KEYS.history, []);
+let savedItems = loadStorage(STORAGE_KEYS.saved, []);
 
+/* =======================================================
+   APPLICATION STATE
+======================================================= */
+
+let selectedImageFile = null;
+let selectedDocumentFile = null;
+let selectedSpeechFile = null;
+
+let translationRecorder = null;
+let speechRecorder = null;
 let conversationRecorder = null;
+
+let translationStream = null;
+let speechStream = null;
 let conversationStream = null;
 
-let conversationRunning = false;
-let conversationProcessing = false;
+let translationChunks = [];
+let speechChunks = [];
+let conversationChunks = [];
 
-let lastAudioUrl = null;
+let lastTranslation = null;
+let lastImageResult = null;
+let lastWritingResult = null;
+let lastDocumentResult = null;
+let lastTranscript = null;
+let lastConversation = null;
 
-let autoPlay = true;
-let speechSpeed = 1;
+let documentAudioBlob = null;
+let documentAudioUrl = null;
+let conversationAudioUrl = null;
+let imagePreviewUrl = null;
+let toastTimer = null;
 
+/* =======================================================
+   STORAGE HELPERS
+======================================================= */
 
-// ============================================================
-// ELEMENTS
-// ============================================================
-
-const textInput = document.getElementById("textInput");
-const characterCount = document.getElementById("characterCount");
-
-const translateButton = document.getElementById("translateButton");
-
-const translationResult =
-    document.getElementById("translationResult");
-
-const speakerButton =
-    document.getElementById("speakerButton");
-
-const micButton =
-    document.getElementById("micButton");
-
-const clearButton =
-    document.getElementById("clearButton");
-
-const swapButton =
-    document.getElementById("swapButton");
-
-const fromLanguageButton =
-    document.getElementById("fromLanguageButton");
-
-const toLanguageButton =
-    document.getElementById("toLanguageButton");
-
-const languageModal =
-    document.getElementById("languageModal");
-
-const languageModalTitle =
-    document.getElementById("languageModalTitle");
-
-const languageSearch =
-    document.getElementById("languageSearch");
-
-const languageList =
-    document.getElementById("languageList");
-
-const closeLanguageModal =
-    document.getElementById("closeLanguageModal");
-
-const conversationButton =
-    document.getElementById("conversationButton");
-
-const conversationModal =
-    document.getElementById("conversationModal");
-
-const closeConversationModal =
-    document.getElementById("closeConversationModal");
-
-const conversationMic =
-    document.getElementById("conversationMic");
-
-const conversationMicText =
-    document.getElementById("conversationMicText");
-
-const conversationStatus =
-    document.getElementById("conversationStatus");
-
-const conversationMessages =
-    document.getElementById("conversationMessages");
-
-const settingsButton =
-    document.getElementById("settingsButton");
-
-const settingsModal =
-    document.getElementById("settingsModal");
-
-const closeSettingsModal =
-    document.getElementById("closeSettingsModal");
-
-const autoPlayCheckbox =
-    document.getElementById("autoPlay");
-
-const speechSpeedSelect =
-    document.getElementById("speechSpeed");
-
-const loading =
-    document.getElementById("loading");
-
-const loadingText =
-    document.getElementById("loadingText");
-
-
-// ============================================================
-// LANGUAGE UI
-// ============================================================
-
-function updateLanguageUI() {
-
-    document.getElementById("fromFlag").textContent =
-        fromLanguage.flag;
-
-    document.getElementById("fromLanguage").textContent =
-        fromLanguage.name;
-
-    document.getElementById("toFlag").textContent =
-        toLanguage.flag;
-
-    document.getElementById("toLanguage").textContent =
-        toLanguage.name;
-
-    document.getElementById("inputLanguageTitle").textContent =
-        fromLanguage.name;
-
-    document.getElementById("outputLanguageTitle").textContent =
-        toLanguage.name;
-
-    document.getElementById("conversationFromFlag").textContent =
-        fromLanguage.flag;
-
-    document.getElementById("conversationFromLanguage").textContent =
-        fromLanguage.name;
-
-    document.getElementById("conversationToFlag").textContent =
-        toLanguage.flag;
-
-    document.getElementById("conversationToLanguage").textContent =
-        toLanguage.name;
+function loadStorage(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch (error) {
+    console.warn("Could not read browser storage:", error);
+    return fallback;
+  }
 }
 
-
-updateLanguageUI();
-
-
-// ============================================================
-// LANGUAGE MODAL
-// ============================================================
-
-function openLanguageModal(target) {
-
-    languageSelectionTarget = target;
-
-    languageModalTitle.textContent =
-        target === "from"
-            ? "Translate from"
-            : "Translate to";
-
-    languageSearch.value = "";
-
-    renderLanguages("");
-
-    languageModal.classList.remove("hidden");
-
-    setTimeout(() => {
-        languageSearch.focus();
-    }, 100);
+function saveStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error("Could not save browser data:", error);
+    showToast("Browser storage is full. Some data could not be saved.");
+  }
 }
 
+/* =======================================================
+   GENERAL HELPERS
+======================================================= */
 
-function closeLanguageSelector() {
-
-    languageModal.classList.add("hidden");
-
-    languageSelectionTarget = null;
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[char]);
 }
 
+function showToast(message) {
+  const toast = $("toast");
 
-function renderLanguages(searchTerm) {
+  if (!toast) {
+    console.log(message);
+    return;
+  }
 
-    const search = searchTerm.toLowerCase().trim();
+  toast.textContent = message;
+  toast.classList.add("show");
 
-    languageList.innerHTML = "";
+  clearTimeout(toastTimer);
 
-    const filtered = languages.filter(language =>
-        language.name.toLowerCase().includes(search)
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+}
+
+function setBusy(
+  active,
+  title = "Working on it...",
+  message = "Please wait."
+) {
+  const overlay = $("busyOverlay");
+
+  if (!overlay) return;
+
+  overlay.classList.toggle("hidden", !active);
+
+  $("busyTitle").textContent = title;
+  $("busyMessage").textContent = message;
+}
+
+function setButtonLoading(button, loading, originalText) {
+  if (!button) return;
+
+  button.disabled = loading;
+
+  if (loading) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = "Please wait...";
+  } else {
+    button.textContent =
+      originalText ||
+      button.dataset.originalText ||
+      "Submit";
+  }
+}
+
+function formatDate(date) {
+  return new Date(date).toLocaleString();
+}
+
+function makeId() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+/* =======================================================
+   API REQUEST HANDLER
+======================================================= */
+
+async function api(path, options = {}) {
+  const base = API_BASE_URL.replace(/\/+$/, "");
+  const endpoint = path.replace(/^\/+/, "");
+
+  const url = `${base}/${endpoint}`;
+
+  let response;
+
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    throw new Error(
+      "Cannot connect to TalkBridge backend. Make sure the FastAPI server is running and the API address is correct."
     );
+  }
 
-    filtered.forEach(language => {
+  if (!response.ok) {
+    let message = `Request failed (${response.status}).`;
 
-        const button =
-            document.createElement("button");
+    try {
+      const data = await response.json();
 
-        button.className = "language-option";
+      if (typeof data.detail === "string") {
+        message = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        message = data.detail
+          .map(item => item.msg || JSON.stringify(item))
+          .join(", ");
+      } else if (data.message) {
+        message = data.message;
+      }
+    } catch {
+      try {
+        message = await response.text() || message;
+      } catch {
+        // Keep the original error message.
+      }
+    }
 
-        button.innerHTML = `
-            <span>${language.flag}</span>
-            <span>${language.name}</span>
-        `;
+    throw new Error(message);
+  }
 
-        button.addEventListener("click", () => {
+  const contentType =
+    response.headers.get("content-type") || "";
 
-            if (languageSelectionTarget === "from") {
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
 
-                if (language.code === toLanguage.code) {
-                    alert("Choose two different languages.");
-                    return;
-                }
+  return response.blob();
+}
 
-                fromLanguage = language;
+/* =======================================================
+   HISTORY AND SAVED RESULTS
+======================================================= */
 
-            } else {
+function addHistory(type, title, content, metadata = {}) {
+  const item = {
+    id: makeId(),
+    type,
+    title,
+    content: String(content ?? ""),
+    metadata,
+    createdAt: new Date().toISOString()
+  };
 
-                if (language.code === fromLanguage.code) {
-                    alert("Choose two different languages.");
-                    return;
-                }
+  historyItems.unshift(item);
 
-                toLanguage = language;
-            }
+  // Keep the latest 200 activities.
+  historyItems = historyItems.slice(0, 200);
 
-            updateLanguageUI();
+  saveStorage(STORAGE_KEYS.history, historyItems);
 
-            closeLanguageSelector();
-        });
+  renderHistory();
+  renderRecent();
 
-        languageList.appendChild(button);
+  return item;
+}
+
+function saveResult(type, title, content, metadata = {}) {
+  if (!String(content || "").trim()) {
+    showToast("There is no result to save.");
+    return;
+  }
+
+  const item = {
+    id: makeId(),
+    type,
+    title,
+    content: String(content),
+    metadata,
+    createdAt: new Date().toISOString()
+  };
+
+  savedItems.unshift(item);
+
+  saveStorage(STORAGE_KEYS.saved, savedItems);
+
+  renderSaved();
+
+  showToast("Result saved successfully.");
+}
+
+function getIcon(type) {
+  const icons = {
+    translation: "⇄",
+    image: "▧",
+    writing: "✎",
+    document: "▤",
+    speech: "♫",
+    conversation: "♫"
+  };
+
+  return icons[type] || "•";
+}
+
+function renderActivityItem(item, saved = false) {
+  return `
+    <article class="activity-item">
+
+      <div class="activity-icon">
+        ${getIcon(item.type)}
+      </div>
+
+      <div class="activity-body">
+
+        <strong>${escapeHTML(item.title)}</strong>
+
+        <p>
+          ${escapeHTML(item.content.slice(0, 220))}
+          ${item.content.length > 220 ? "..." : ""}
+        </p>
+
+        <div class="activity-meta">
+          ${escapeHTML(formatDate(item.createdAt))}
+        </div>
+
+        <div class="activity-actions">
+
+          <button
+            class="text-button"
+            data-action="open"
+            data-id="${escapeHTML(item.id)}"
+            data-saved="${saved}">
+            View
+          </button>
+
+          <button
+            class="text-button"
+            data-action="copy"
+            data-id="${escapeHTML(item.id)}"
+            data-saved="${saved}">
+            Copy
+          </button>
+
+          ${
+            saved
+              ? `
+                <button
+                  class="text-button"
+                  data-action="delete"
+                  data-id="${escapeHTML(item.id)}"
+                  data-saved="true">
+                  Remove
+                </button>
+              `
+              : ""
+          }
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
+}
+
+function renderHistory() {
+  const container = $("historyList");
+
+  if (!container) return;
+
+  if (!historyItems.length) {
+    container.innerHTML =
+      '<div class="empty-state">No activity yet.</div>';
+    return;
+  }
+
+  container.innerHTML = historyItems
+    .map(item => renderActivityItem(item))
+    .join("");
+}
+
+function renderSaved() {
+  const container = $("savedList");
+
+  if (!container) return;
+
+  if (!savedItems.length) {
+    container.innerHTML =
+      "<div class=\"empty-state\">You haven't saved anything yet.</div>";
+    return;
+  }
+
+  container.innerHTML = savedItems
+    .map(item => renderActivityItem(item, true))
+    .join("");
+}
+
+function renderRecent() {
+  const container = $("overviewRecent");
+
+  if (!container) return;
+
+  if (!historyItems.length) {
+    container.innerHTML =
+      '<div class="empty-state">Your recent activities will appear here.</div>';
+    return;
+  }
+
+  container.innerHTML = historyItems
+    .slice(0, 4)
+    .map(item => `
+      <article class="activity-item">
+
+        <div class="activity-icon">
+          ${getIcon(item.type)}
+        </div>
+
+        <div class="activity-body">
+
+          <strong>${escapeHTML(item.title)}</strong>
+
+          <p>${escapeHTML(item.content.slice(0, 100))}</p>
+
+          <div class="activity-meta">
+            ${escapeHTML(formatDate(item.createdAt))}
+          </div>
+
+        </div>
+
+      </article>
+    `)
+    .join("");
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("Copied to clipboard.");
+  } catch {
+    const textarea = document.createElement("textarea");
+
+    textarea.value = text;
+
+    document.body.appendChild(textarea);
+
+    textarea.select();
+    document.execCommand("copy");
+
+    textarea.remove();
+
+    showToast("Copied to clipboard.");
+  }
+}
+
+function openActivity(item) {
+  const win = window.open("", "_blank");
+
+  if (!win) {
+    showToast("Allow pop-ups to view this result.");
+    return;
+  }
+
+  const safeTitle = escapeHTML(item.title);
+  const safeContent = escapeHTML(item.content);
+
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${safeTitle} | TalkBridge</title>
+
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1">
+
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          max-width: 850px;
+          margin: 50px auto;
+          padding: 20px;
+          color: #17243a;
+          line-height: 1.8;
+        }
+
+        h1 {
+          font-size: 24px;
+          color: #102a56;
+        }
+
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f6f8fb;
+          padding: 20px;
+          border-radius: 10px;
+          font-family: inherit;
+        }
+      </style>
+
+    </head>
+
+    <body>
+
+      <h1>${safeTitle}</h1>
+
+      <p>${escapeHTML(formatDate(item.createdAt))}</p>
+
+      <pre>${safeContent}</pre>
+
+    </body>
+    </html>
+  `);
+
+  win.document.close();
+}
+
+/* =======================================================
+   NAVIGATION
+======================================================= */
+
+function navigate(page) {
+  document.querySelectorAll(".page").forEach(section => {
+    section.classList.toggle(
+      "active",
+      section.id === `page-${page}`
+    );
+  });
+
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.classList.toggle(
+      "active",
+      link.dataset.page === page
+    );
+  });
+
+  const activeLink = document.querySelector(
+    `.nav-link[data-page="${page}"]`
+  );
+
+  $("currentPageName").textContent = activeLink
+    ? activeLink.textContent.trim()
+    : "Overview";
+
+  $("sidebar").classList.remove("open");
+
+  if (page === "history") renderHistory();
+  if (page === "saved") renderSaved();
+  if (page === "overview") renderRecent();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+function setupNavigation() {
+  document.querySelectorAll("[data-page]").forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      navigate(button.dataset.page);
     });
+  });
+
+  document.querySelectorAll("[data-open]").forEach(button => {
+    button.addEventListener("click", () => {
+      navigate(button.dataset.open);
+    });
+  });
+
+  $("mobileMenu").addEventListener("click", () => {
+    $("sidebar").classList.toggle("open");
+  });
 }
 
+/* =======================================================
+   HISTORY AND SAVED PAGE EVENTS
+======================================================= */
 
-fromLanguageButton.addEventListener(
-    "click",
-    () => openLanguageModal("from")
-);
+function setupHistoryAndSaved() {
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-action]");
 
-toLanguageButton.addEventListener(
-    "click",
-    () => openLanguageModal("to")
-);
+    if (!button) return;
 
-closeLanguageModal.addEventListener(
-    "click",
-    closeLanguageSelector
-);
+    const id = button.dataset.id;
+    const isSaved = button.dataset.saved === "true";
 
-languageSearch.addEventListener(
-    "input",
-    e => renderLanguages(e.target.value)
-);
+    const collection = isSaved
+      ? savedItems
+      : historyItems;
 
+    const item = collection.find(entry => entry.id === id);
 
-// ============================================================
-// SWAP
-// ============================================================
+    if (!item) return;
 
-swapButton.addEventListener("click", () => {
+    const action = button.dataset.action;
 
-    const temporary = fromLanguage;
+    if (action === "open") {
+      openActivity(item);
+    }
 
-    fromLanguage = toLanguage;
-    toLanguage = temporary;
+    if (action === "copy") {
+      copyText(item.content);
+    }
 
-    updateLanguageUI();
-});
+    if (action === "delete") {
+      savedItems = savedItems.filter(
+        entry => entry.id !== id
+      );
 
+      saveStorage(STORAGE_KEYS.saved, savedItems);
 
-// ============================================================
-// CHARACTER COUNT
-// ============================================================
+      renderSaved();
 
-textInput.addEventListener("input", () => {
+      showToast("Saved item removed.");
+    }
+  });
 
-    characterCount.textContent =
-        `${textInput.value.length} / 1000`;
-});
+  $("clearHistory").addEventListener("click", () => {
+    if (!confirm("Clear all TalkBridge history from this browser?")) {
+      return;
+    }
 
+    historyItems = [];
 
-// ============================================================
-// CLEAR
-// ============================================================
+    saveStorage(STORAGE_KEYS.history, historyItems);
 
-clearButton.addEventListener("click", () => {
+    renderHistory();
+    renderRecent();
 
-    textInput.value = "";
+    showToast("History cleared.");
+  });
 
-    characterCount.textContent =
-        "0 / 1000";
+  $("clearSaved").addEventListener("click", () => {
+    if (!confirm("Remove all saved results?")) {
+      return;
+    }
 
-    translationResult.textContent =
-        "Your translation will appear here.";
-});
+    savedItems = [];
 
+    saveStorage(STORAGE_KEYS.saved, savedItems);
 
-// ============================================================
-// LOADING
-// ============================================================
+    renderSaved();
 
-function showLoading(message) {
+    showToast("Saved items cleared.");
+  });
 
-    loadingText.textContent = message;
+  $("clearLocalData").addEventListener("click", () => {
+    if (!confirm(
+      "This will clear TalkBridge history, saved items and preferences on this browser. Continue?"
+    )) {
+      return;
+    }
 
-    loading.classList.remove("hidden");
+    historyItems = [];
+    savedItems = [];
+
+    preferences = { ...DEFAULT_PREFERENCES };
+
+    saveStorage(STORAGE_KEYS.history, []);
+    saveStorage(STORAGE_KEYS.saved, []);
+    saveStorage(STORAGE_KEYS.preferences, preferences);
+
+    applyPreferences();
+
+    renderHistory();
+    renderSaved();
+    renderRecent();
+
+    showToast("Local TalkBridge data cleared.");
+  });
 }
 
+/* =======================================================
+   LANGUAGE SELECTORS
+======================================================= */
 
-function hideLoading() {
+function fillLanguages() {
+  const selectors = [
+    "sourceLanguage",
+    "targetLanguage",
+    "imageTargetLanguage",
+    "writingLanguage",
+    "documentTargetLanguage",
+    "conversationSource",
+    "conversationTarget",
+    "prefSource",
+    "prefTarget"
+  ];
 
-    loading.classList.add("hidden");
+  selectors.forEach(id => {
+    const select = $(id);
+
+    if (!select) return;
+
+    const isSource = [
+      "sourceLanguage",
+      "conversationSource",
+      "prefSource"
+    ].includes(id);
+
+    const languages = isSource
+      ? LANGUAGES
+      : LANGUAGES.filter(
+          language => language !== "Auto Detect"
+        );
+
+    select.innerHTML = languages
+      .map(language => `
+        <option value="${escapeHTML(language)}">
+          ${escapeHTML(language)}
+        </option>
+      `)
+      .join("");
+  });
+
+  document.querySelectorAll(".language-options").forEach(select => {
+    if (select.id === "writingLanguage") {
+      select.innerHTML = LANGUAGES
+        .filter(language => language !== "Auto Detect")
+        .map(language => `
+          <option value="${escapeHTML(language)}">
+            ${escapeHTML(language)}
+          </option>
+        `)
+        .join("");
+    }
+  });
 }
 
+/* =======================================================
+   PREFERENCES
+======================================================= */
 
-// ============================================================
-// NORMAL TRANSLATION
-// ============================================================
+function applyPreferences() {
+  $("sourceLanguage").value = preferences.source;
+  $("targetLanguage").value = preferences.target;
 
-translateButton.addEventListener(
+  $("prefSource").value = preferences.source;
+  $("prefTarget").value = preferences.target;
+
+  $("prefAutoplay").checked = Boolean(preferences.autoplay);
+
+  $("prefSpeed").value = preferences.speed;
+
+  $("speedValue").textContent =
+    `${Number(preferences.speed).toFixed(1)}x`;
+
+  $("conversationSource").value =
+    preferences.source === "Auto Detect"
+      ? "English"
+      : preferences.source;
+
+  $("conversationTarget").value = preferences.target;
+
+  $("imageTargetLanguage").value = preferences.target;
+
+  $("documentTargetLanguage").value = preferences.target;
+
+  $("writingLanguage").value = "English";
+}
+
+function loadPreferencesFromForm() {
+  preferences = {
+    source: $("prefSource").value,
+    target: $("prefTarget").value,
+    autoplay: $("prefAutoplay").checked,
+    speed: Number($("prefSpeed").value)
+  };
+
+  saveStorage(STORAGE_KEYS.preferences, preferences);
+
+  applyPreferences();
+
+  showToast("Preferences saved.");
+}
+
+function setupPreferences() {
+  $("prefSpeed").addEventListener("input", () => {
+    $("speedValue").textContent =
+      `${Number($("prefSpeed").value).toFixed(1)}x`;
+  });
+
+  $("savePreferences").addEventListener(
     "click",
-    translateText
-);
+    loadPreferencesFromForm
+  );
+}
 
+/* =======================================================
+   TRANSLATION INTELLIGENCE
+======================================================= */
+
+function setupTranslation() {
+  $("translationInput").addEventListener("input", () => {
+    $("sourceCount").textContent =
+      `${$("translationInput").value.length} / 10000`;
+  });
+
+  $("clearTranslation").addEventListener("click", () => {
+    $("translationInput").value = "";
+
+    $("sourceCount").textContent = "0 / 10000";
+
+    $("translationOutput").innerHTML =
+      '<span class="output-placeholder">Your translation will appear here.</span>';
+
+    $("translationStatus").textContent = "Ready";
+
+    lastTranslation = null;
+  });
+
+  $("swapLanguages").addEventListener("click", () => {
+    const source = $("sourceLanguage");
+    const target = $("targetLanguage");
+
+    if (source.value === "Auto Detect") {
+      showToast("Choose a source language before swapping.");
+      return;
+    }
+
+    const previousSource = source.value;
+
+    source.value = target.value;
+    target.value = previousSource;
+
+    const previousText = $("translationInput").value;
+    const previousOutput = $("translationOutput").innerText;
+
+    if (
+      previousOutput &&
+      !previousOutput.includes("Your translation will appear here.")
+    ) {
+      $("translationInput").value = previousOutput;
+
+      $("translationOutput").textContent = previousText;
+
+      $("sourceCount").textContent =
+        `${previousOutput.length} / 10000`;
+    }
+  });
+
+  $("translateButton").addEventListener("click", translateText);
+
+  $("copyTranslation").addEventListener("click", () => {
+    if (!lastTranslation) {
+      return showToast("No translation to copy.");
+    }
+
+    copyText(lastTranslation.translated_text);
+  });
+
+  $("saveTranslation").addEventListener("click", () => {
+    if (!lastTranslation) {
+      return showToast("No translation to save.");
+    }
+
+    saveResult(
+      "translation",
+      `${lastTranslation.source_language} to ${lastTranslation.target_language}`,
+      lastTranslation.translated_text,
+      {
+        original: lastTranslation.original_text
+      }
+    );
+  });
+
+  $("speakTranslation").addEventListener("click", () => {
+    if (!lastTranslation) {
+      return showToast("No translation to play.");
+    }
+
+    speakText(
+      lastTranslation.translated_text,
+      lastTranslation.target_language
+    );
+  });
+
+  // One click handler manages both recording and stopping.
+  $("translationMic").addEventListener(
+    "click",
+    toggleTranslationRecording
+  );
+
+  $("cancelTranslationMic").addEventListener(
+    "click",
+    cancelTranslationRecording
+  );
+}
 
 async function translateText() {
+  const text = $("translationInput").value.trim();
 
-    const text = textInput.value.trim();
+  if (!text) {
+    showToast("Enter text to translate.");
+    return;
+  }
 
-    if (!text) {
+  const button = $("translateButton");
 
-        alert("Enter something to translate.");
+  setButtonLoading(button, true);
 
-        return;
+  setBusy(
+    true,
+    "Translating text",
+    "Checking the translation database and processing your request."
+  );
+
+  try {
+    const result = await api("/translation/translate", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        text,
+        source_language: $("sourceLanguage").value,
+        target_language: $("targetLanguage").value
+      })
+    });
+
+    lastTranslation = result;
+
+    $("translationOutput").textContent =
+      result.translated_text || "No translation returned.";
+
+    // Display the actual detected language when Auto Detect is used.
+    const detectedSource = result.source_language || "Unknown";
+
+    const translationStatus =
+      result.status === "verified"
+        ? "Verified"
+        : "AI generated";
+
+    $("translationStatus").textContent =
+      $("sourceLanguage").value === "Auto Detect"
+        ? `${detectedSource} detected • ${translationStatus}`
+        : translationStatus;
+
+    addHistory(
+      "translation",
+      `${result.source_language} → ${result.target_language}`,
+      result.translated_text,
+      {
+        original: text,
+        provider: result.provider,
+        status: result.status
+      }
+    );
+
+    if (preferences.autoplay && result.translated_text) {
+      speakText(
+        result.translated_text,
+        result.target_language
+      );
     }
 
-    translateButton.disabled = true;
+    showToast("Translation completed.");
 
-    showLoading("Translating...");
+  } catch (error) {
+    showToast(error.message);
 
-    try {
+  } finally {
+    setBusy(false);
 
-        const response =
-            await fetch(`${API_URL}/translate`, {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    text: text,
-
-                    source_language:
-                        fromLanguage.name,
-
-                    target_language:
-                        toLanguage.name
-                })
-            });
-
-
-        const data = await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.detail || "Translation failed."
-            );
-        }
-
-
-        translationResult.textContent =
-            data.translation;
-
-
-        if (autoPlay) {
-
-            await playTranslationAudio(
-                data.translation,
-                toLanguage.code
-            );
-        }
-
-    } catch (error) {
-
-        console.error(error);
-
-        translationResult.textContent =
-            "Translation failed. Check that the backend is running and your API key is configured.";
-
-        alert(error.message);
-
-    } finally {
-
-        translateButton.disabled = false;
-
-        hideLoading();
-    }
+    setButtonLoading(
+      button,
+      false,
+      "Translate text →"
+    );
+  }
 }
 
+/* =======================================================
+   SPEECH PLAYBACK
+======================================================= */
 
-// ============================================================
-// MICROPHONE - NORMAL MODE
-// ============================================================
+function getSpeechLanguageCode(language) {
+  const codes = {
+    English: "en-US",
+    French: "fr-FR",
+    Spanish: "es-ES",
+    German: "de-DE",
+    Chinese: "zh-CN",
+    Arabic: "ar-SA",
+    Japanese: "ja-JP",
+    Korean: "ko-KR",
+    Portuguese: "pt-PT",
+    Hindi: "hi-IN",
+    Italian: "it-IT",
+    Russian: "ru-RU",
+    Dutch: "nl-NL",
+    Turkish: "tr-TR",
+    Swedish: "sv-SE",
+    Polish: "pl-PL"
+  };
 
-micButton.addEventListener(
-    "click",
-    toggleNormalMicrophone
-);
-
-
-async function toggleNormalMicrophone() {
-
-    if (
-        mediaRecorder &&
-        mediaRecorder.state === "recording"
-    ) {
-
-        mediaRecorder.stop();
-
-        return;
-    }
-
-
-    try {
-
-        microphoneStream =
-            await navigator.mediaDevices.getUserMedia({
-                audio: true
-            });
-
-
-        recordedChunks = [];
-
-
-        mediaRecorder =
-            new MediaRecorder(
-                microphoneStream
-            );
-
-
-        mediaRecorder.ondataavailable =
-            event => {
-
-                if (event.data.size > 0) {
-
-                    recordedChunks.push(
-                        event.data
-                    );
-                }
-            };
-
-
-        mediaRecorder.onstop =
-            async () => {
-
-                stopMicrophoneStream();
-
-                micButton.classList.remove(
-                    "recording"
-                );
-
-                micButton.textContent = "🎤";
-
-
-                const audioBlob =
-                    new Blob(
-                        recordedChunks,
-                        {
-                            type: "audio/webm"
-                        }
-                    );
-
-
-                await transcribeNormalAudio(
-                    audioBlob
-                );
-            };
-
-
-        mediaRecorder.start();
-
-        micButton.classList.add(
-            "recording"
-        );
-
-        micButton.textContent = "⏹";
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "Microphone permission was denied or unavailable."
-        );
-    }
+  return codes[language] || "";
 }
 
+function speakText(text, language = "English") {
+  if (!("speechSynthesis" in window)) {
+    showToast("Speech playback is not supported in this browser.");
+    return;
+  }
 
-function stopMicrophoneStream() {
+  if (!text) return;
 
-    if (!microphoneStream) {
-        return;
-    }
+  window.speechSynthesis.cancel();
 
-    microphoneStream
-        .getTracks()
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  const code = getSpeechLanguageCode(language);
+
+  if (code) {
+    utterance.lang = code;
+  }
+
+  utterance.rate = Number(preferences.speed) || 1;
+
+  window.speechSynthesis.speak(utterance);
+}
+
+/* =======================================================
+   TRANSLATION MICROPHONE
+======================================================= */
+
+async function toggleTranslationRecording() {
+  if (
+    translationRecorder &&
+    translationRecorder.state === "recording"
+  ) {
+    stopTranslationRecording();
+    return;
+  }
+
+  await startTranslationRecording();
+}
+
+async function startTranslationRecording() {
+  if (
+    !navigator.mediaDevices?.getUserMedia ||
+    !window.MediaRecorder
+  ) {
+    showToast(
+      "Microphone recording is not supported here. Use HTTPS or localhost."
+    );
+    return;
+  }
+
+  try {
+    translationStream =
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+    translationChunks = [];
+
+    translationRecorder = new MediaRecorder(
+      translationStream
+    );
+
+    translationRecorder.ondataavailable = event => {
+      if (event.data.size) {
+        translationChunks.push(event.data);
+      }
+    };
+
+    translationRecorder.onstop = async () => {
+      const mimeType =
+        translationRecorder?.mimeType || "audio/webm";
+
+      const blob = new Blob(translationChunks, {
+        type: mimeType
+      });
+
+      translationStream
+        ?.getTracks()
         .forEach(track => track.stop());
 
-    microphoneStream = null;
-}
+      translationStream = null;
+      translationRecorder = null;
 
+      $("translationMicStatus").classList.add("hidden");
 
-// ============================================================
-// TRANSCRIBE NORMAL AUDIO
-// ============================================================
+      $("translationMic").textContent = "🎙 Speak";
 
-async function transcribeNormalAudio(audioBlob) {
+      if (blob.size) {
+        await transcribeTranslationBlob(blob);
+      }
+    };
 
-    showLoading("Understanding your speech...");
+    translationRecorder.start();
 
-    try {
+    $("translationMicStatus").classList.remove("hidden");
 
-        const formData =
-            new FormData();
+    $("translationMicText").textContent =
+      "Recording... Speak now.";
 
-        formData.append(
-            "file",
-            audioBlob,
-            "speech.webm"
-        );
+    $("translationMic").textContent = "■ Stop";
 
+  } catch (error) {
+    translationStream
+      ?.getTracks()
+      .forEach(track => track.stop());
 
-        formData.append(
-            "language",
-            fromLanguage.code
-        );
+    translationStream = null;
+    translationRecorder = null;
 
-
-        const response =
-            await fetch(
-                `${API_URL}/speech/transcribe`,
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                "Speech recognition failed."
-            );
-        }
-
-
-        textInput.value =
-            data.text;
-
-
-        characterCount.textContent =
-            `${data.text.length} / 1000`;
-
-
-        hideLoading();
-
-        await translateText();
-
-    } catch (error) {
-
-        console.error(error);
-
-        hideLoading();
-
-        alert(error.message);
-    }
-}
-
-
-// ============================================================
-// TTS
-// ============================================================
-
-async function playTranslationAudio(
-    text,
-    languageCode
-) {
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_URL}/speech`,
-                {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-
-                        text: text,
-
-                        language:
-                            languageCode,
-
-                        speed:
-                            speechSpeed
-                    })
-                }
-            );
-
-
-        if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            throw new Error(
-                errorData.detail ||
-                "Audio generation failed."
-            );
-        }
-
-
-        const blob =
-            await response.blob();
-
-
-        if (lastAudioUrl) {
-
-            URL.revokeObjectURL(
-                lastAudioUrl
-            );
-        }
-
-
-        lastAudioUrl =
-            URL.createObjectURL(blob);
-
-
-        const audio =
-            new Audio(lastAudioUrl);
-
-
-        await audio.play();
-
-    } catch (error) {
-
-        console.error(error);
-
-        console.warn(
-            "Could not play translated audio:",
-            error.message
-        );
-    }
-}
-
-
-speakerButton.addEventListener(
-    "click",
-    async () => {
-
-        const text =
-            translationResult.textContent.trim();
-
-        if (
-            !text ||
-            text === "Your translation will appear here."
-        ) {
-
-            return;
-        }
-
-        await playTranslationAudio(
-            text,
-            toLanguage.code
-        );
-    }
-);
-
-
-// ============================================================
-// CONVERSATION MODE
-// ============================================================
-
-conversationButton.addEventListener(
-    "click",
-    openConversation
-);
-
-
-function openConversation() {
-
-    updateLanguageUI();
-
-    conversationModal.classList.remove(
-        "hidden"
+    showToast(
+      "Microphone permission was denied or unavailable."
     );
+  }
 }
 
-
-closeConversationModal.addEventListener(
-    "click",
-    async () => {
-
-        if (conversationRunning) {
-
-            await stopConversation();
-        }
-
-        conversationModal.classList.add(
-            "hidden"
-        );
-    }
-);
-
-
-// ============================================================
-// START / STOP CONTINUOUS CONVERSATION
-// ============================================================
-
-conversationMic.addEventListener(
-    "click",
-    async () => {
-
-        if (conversationRunning) {
-
-            await stopConversation();
-
-        } else {
-
-            await startConversation();
-        }
-    }
-);
-
-
-async function startConversation() {
-
-    if (conversationRunning) {
-        return;
-    }
-
-
-    try {
-
-        conversationStream =
-            await navigator.mediaDevices.getUserMedia({
-                audio: true
-            });
-
-
-        conversationRunning = true;
-
-
-        conversationMic.classList.add(
-            "listening"
-        );
-
-        conversationMicText.textContent =
-            "Stop Listening";
-
-
-        conversationStatus.textContent =
-            "Listening...";
-
-        conversationStatus.classList.add(
-            "listening"
-        );
-
-
-        conversationMessages.innerHTML = "";
-
-
-        startConversationRecording();
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "Microphone permission is required for Conversation Mode."
-        );
-    }
+function stopTranslationRecording() {
+  if (
+    translationRecorder &&
+    translationRecorder.state === "recording"
+  ) {
+    translationRecorder.stop();
+  }
 }
 
+function cancelTranslationRecording() {
+  if (
+    translationRecorder &&
+    translationRecorder.state !== "inactive"
+  ) {
+    translationRecorder.onstop = () => {
+      translationStream
+        ?.getTracks()
+        .forEach(track => track.stop());
 
-async function stopConversation() {
+      translationStream = null;
+      translationRecorder = null;
+    };
 
-    conversationRunning = false;
+    translationRecorder.stop();
+  } else {
+    translationStream
+      ?.getTracks()
+      .forEach(track => track.stop());
 
+    translationStream = null;
+    translationRecorder = null;
+  }
 
-    if (
-        conversationRecorder &&
-        conversationRecorder.state === "recording"
-    ) {
+  $("translationMicStatus").classList.add("hidden");
 
-        conversationRecorder.stop();
-    }
+  $("translationMic").textContent = "🎙 Speak";
 
+  showToast("Recording cancelled.");
+}
 
-    if (conversationStream) {
+async function transcribeTranslationBlob(blob) {
+  setBusy(
+    true,
+    "Transcribing your voice",
+    "Converting your speech into text."
+  );
 
-        conversationStream
-            .getTracks()
-            .forEach(
-                track => track.stop()
-            );
+  try {
+    const form = new FormData();
 
-        conversationStream = null;
-    }
-
-
-    conversationMic.classList.remove(
-        "listening"
+    form.append(
+      "file",
+      blob,
+      "translation-recording.webm"
     );
 
-    conversationMicText.textContent =
-        "Start Listening";
+    const selectedLanguage = $("sourceLanguage").value;
 
-
-    conversationStatus.textContent =
-        "Stopped";
-
-    conversationStatus.classList.remove(
-        "listening"
+    form.append(
+      "language",
+      selectedLanguage === "Auto Detect"
+        ? ""
+        : getSpeechLanguageCode(selectedLanguage)
     );
+
+    const result = await api("/speech/transcribe", {
+      method: "POST",
+      body: form
+    });
+
+    const transcription =
+      result.transcribed_text ||
+      result.text ||
+      "";
+
+    $("translationInput").value = transcription;
+
+    $("sourceCount").textContent =
+      `${transcription.length} / 10000`;
+
+    showToast("Speech converted to text.");
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
 }
 
+/* =======================================================
+   IMAGE INTELLIGENCE
+======================================================= */
 
-// ============================================================
-// CONTINUOUS RECORDING LOOP
-// ============================================================
+function setupImage() {
+  $("chooseImage").addEventListener("click", () => {
+    $("imageFile").click();
+  });
 
-function startConversationRecording() {
+  $("imageFile").addEventListener("change", event => {
+    const file = event.target.files[0];
 
-    if (!conversationRunning) {
-        return;
+    if (file) {
+      selectImage(file);
+    }
+  });
+
+  setupDropArea(
+    $("imageDropArea"),
+    selectImage
+  );
+
+  $("removeImage").addEventListener("click", () => {
+    selectedImageFile = null;
+
+    $("imageFile").value = "";
+
+    $("imagePreviewContainer").classList.add("hidden");
+    $("imageResultSection").classList.add("hidden");
+    $("imageTranslationResult").classList.add("hidden");
+
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+      imagePreviewUrl = null;
+    }
+  });
+
+  $("analyzeImage").addEventListener("click", () => {
+    processImage("analyze");
+  });
+
+  $("extractImageText").addEventListener("click", () => {
+    processImage("ocr");
+  });
+
+  $("translateImageText").addEventListener(
+    "click",
+    translateImageOCR
+  );
+
+  $("saveImageResult").addEventListener("click", () => {
+    if (!lastImageResult) return;
+
+    saveResult(
+      "image",
+      "Image intelligence result",
+      lastImageResult
+    );
+  });
+}
+
+function selectImage(file) {
+  const allowed = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif"
+  ];
+
+  if (!allowed.includes(file.type)) {
+    showToast("Choose a JPEG, PNG, WEBP or GIF image.");
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    showToast("Image must be smaller than 10 MB.");
+    return;
+  }
+
+  selectedImageFile = file;
+
+  if (imagePreviewUrl) {
+    URL.revokeObjectURL(imagePreviewUrl);
+  }
+
+  imagePreviewUrl = URL.createObjectURL(file);
+
+  $("imagePreview").src = imagePreviewUrl;
+
+  $("imageFileName").textContent = file.name;
+
+  $("imagePreviewContainer").classList.remove("hidden");
+
+  $("imageResultSection").classList.add("hidden");
+
+  $("imageTranslationResult").classList.add("hidden");
+
+  lastImageResult = null;
+}
+
+async function processImage(mode) {
+  if (!selectedImageFile) {
+    showToast("Select an image first.");
+    return;
+  }
+
+  const form = new FormData();
+
+  form.append("file", selectedImageFile);
+
+  let endpoint;
+
+  if (mode === "analyze") {
+    endpoint = "/image/analyze";
+
+    form.append(
+      "question",
+      $("imageQuestion").value.trim() ||
+      "Describe this image in detail."
+    );
+  } else {
+    endpoint = "/image/extract-text";
+  }
+
+  setBusy(
+    true,
+    mode === "ocr" ? "Extracting text" : "Analyzing image",
+    "TalkBridge is processing your image."
+  );
+
+  try {
+    const result = await api(endpoint, {
+      method: "POST",
+      body: form
+    });
+
+    lastImageResult =
+      mode === "ocr"
+        ? result.extracted_text
+        : result.analysis;
+
+    $("imageResult").textContent =
+      lastImageResult || "No result returned.";
+
+    $("imageResultSection").classList.remove("hidden");
+
+    addHistory(
+      "image",
+      mode === "ocr" ? "Image OCR" : "Image analysis",
+      lastImageResult
+    );
+
+    showToast(
+      mode === "ocr"
+        ? "Image text extracted."
+        : "Image analyzed."
+    );
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function translateImageOCR() {
+  const extracted = $("imageResult").textContent.trim();
+
+  if (!extracted) {
+    showToast("Extract text from the image first.");
+    return;
+  }
+
+  setBusy(
+    true,
+    "Translating image text",
+    "Detecting the source language and translating the extracted content."
+  );
+
+  try {
+    const result = await api("/translation/translate", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        text: extracted,
+        source_language: "Auto Detect",
+        target_language: $("imageTargetLanguage").value
+      })
+    });
+
+    const detectedSource =
+      result.source_language || "Unknown";
+
+    const output =
+      `${result.translated_text}\n\n` +
+      `Source language: ${detectedSource}\n` +
+      `Translation status: ${result.status}`;
+
+    $("imageTranslationResult").textContent = output;
+
+    $("imageTranslationResult").classList.remove("hidden");
+
+    addHistory(
+      "image",
+      `Image text translated to ${result.target_language}`,
+      result.translated_text,
+      {
+        original: extracted,
+        source_language: detectedSource,
+        status: result.status
+      }
+    );
+
+    showToast("Image text translated.");
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* =======================================================
+   WRITING INTELLIGENCE
+======================================================= */
+
+function setupWriting() {
+  $("processWriting").addEventListener(
+    "click",
+    processWriting
+  );
+
+  $("copyWriting").addEventListener("click", () => {
+    if (lastWritingResult) {
+      copyText(lastWritingResult);
+    }
+  });
+
+  $("saveWriting").addEventListener("click", () => {
+    if (!lastWritingResult) return;
+
+    saveResult(
+      "writing",
+      "Writing intelligence result",
+      lastWritingResult
+    );
+  });
+}
+
+async function processWriting() {
+  const text = $("writingInput").value.trim();
+
+  if (!text) {
+    showToast("Enter some text first.");
+    return;
+  }
+
+  const button = $("processWriting");
+
+  setButtonLoading(button, true);
+
+  setBusy(
+    true,
+    "Improving your writing",
+    "Your text is being processed."
+  );
+
+  try {
+    const result = await api("/writing/process", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        text,
+        task: $("writingTask").value,
+        tone: $("writingTone").value || null,
+        length: $("writingLength").value,
+        language: $("writingLanguage").value
+      })
+    });
+
+    lastWritingResult = result.processed_text;
+
+    $("writingOutput").textContent = lastWritingResult;
+
+    $("writingResultSection").classList.remove("hidden");
+
+    addHistory(
+      "writing",
+      `Writing: ${$("writingTask").selectedOptions[0].text}`,
+      lastWritingResult,
+      {
+        original: text,
+        task: result.task
+      }
+    );
+
+    showToast("Writing task completed.");
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+
+    setButtonLoading(
+      button,
+      false,
+      "Process writing →"
+    );
+  }
+}
+
+/* =======================================================
+   DOCUMENT INTELLIGENCE
+======================================================= */
+
+function setupDocuments() {
+  $("chooseDocument").addEventListener("click", () => {
+    $("documentFile").click();
+  });
+
+  $("documentFile").addEventListener("change", event => {
+    const file = event.target.files[0];
+
+    if (file) {
+      selectDocument(file);
+    }
+  });
+
+  setupDropArea(
+    $("documentDropArea"),
+    selectDocument
+  );
+
+  $("removeDocument").addEventListener("click", () => {
+    selectedDocumentFile = null;
+
+    $("documentFile").value = "";
+
+    $("documentFileInfo").classList.add("hidden");
+
+    $("documentResultSection").classList.add("hidden");
+
+    lastDocumentResult = null;
+    documentAudioBlob = null;
+
+    $("documentAudioStatus").textContent = "";
+  });
+
+  $("processDocument").addEventListener(
+    "click",
+    processDocument
+  );
+
+  $("exportDocx").addEventListener("click", () => {
+    exportDocument("docx");
+  });
+
+  $("exportTxt").addEventListener("click", () => {
+    exportDocument("txt");
+  });
+
+  $("speakDocument").addEventListener("click", () => {
+    if (!lastDocumentResult) {
+      return showToast("No document result to read.");
     }
 
+    speakText(lastDocumentResult, "English");
+  });
 
-    recordedChunks = [];
+  $("downloadDocumentAudio").addEventListener(
+    "click",
+    downloadDocumentAudio
+  );
 
+  $("saveDocumentResult").addEventListener("click", () => {
+    if (!lastDocumentResult) return;
 
-    conversationRecorder =
-        new MediaRecorder(
-            conversationStream
+    saveResult(
+      "document",
+      "Document intelligence result",
+      lastDocumentResult
+    );
+  });
+}
+
+function selectDocument(file) {
+  const allowed = [
+    ".pdf",
+    ".docx",
+    ".txt",
+    ".xlsx"
+  ];
+
+  const extension =
+    "." + file.name.split(".").pop().toLowerCase();
+
+  if (!allowed.includes(extension)) {
+    showToast("Choose a PDF, DOCX, TXT or XLSX file.");
+    return;
+  }
+
+  if (file.size > 20 * 1024 * 1024) {
+    showToast("Document must be smaller than 20 MB.");
+    return;
+  }
+
+  selectedDocumentFile = file;
+
+  $("documentFileName").textContent = file.name;
+
+  $("documentFileSize").textContent =
+    `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+  $("documentFileInfo").classList.remove("hidden");
+
+  $("documentResultSection").classList.add("hidden");
+
+  lastDocumentResult = null;
+}
+
+async function processDocument() {
+  if (!selectedDocumentFile) {
+    showToast("Select a document first.");
+    return;
+  }
+
+  const task = $("documentTask").value;
+
+  const form = new FormData();
+
+  form.append("file", selectedDocumentFile);
+  form.append("task", task);
+  form.append("length", $("documentLength").value);
+  form.append(
+    "target_language",
+    $("documentTargetLanguage").value
+  );
+  form.append(
+    "question",
+    $("documentQuestion").value.trim()
+  );
+
+  setBusy(
+    true,
+    "Processing document",
+    "Extracting and understanding document content."
+  );
+
+  try {
+    let result;
+
+    if (task === "extract") {
+      const extractForm = new FormData();
+
+      extractForm.append("file", selectedDocumentFile);
+
+      result = await api("/documents/extract", {
+        method: "POST",
+        body: extractForm
+      });
+
+      lastDocumentResult =
+        result.extracted_text ||
+        result.text ||
+        result.content ||
+        JSON.stringify(result, null, 2);
+
+    } else {
+      result = await api("/documents/process", {
+        method: "POST",
+        body: form
+      });
+
+      lastDocumentResult =
+        result.result ||
+        result.processed_text ||
+        result.output ||
+        result.answer ||
+        result.translated_text ||
+        JSON.stringify(result, null, 2);
+    }
+
+    $("documentOutput").textContent = lastDocumentResult;
+
+    $("documentResultSection").classList.remove("hidden");
+
+    documentAudioBlob = null;
+
+    $("documentAudioStatus").textContent = "";
+
+    addHistory(
+      "document",
+      `${selectedDocumentFile.name} — ${task}`,
+      lastDocumentResult,
+      {
+        task,
+        filename: selectedDocumentFile.name
+      }
+    );
+
+    showToast("Document processing completed.");
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* =======================================================
+   DOCUMENT EXPORT
+======================================================= */
+
+async function exportDocument(format) {
+  if (!lastDocumentResult) {
+    showToast("Process a document before exporting.");
+    return;
+  }
+
+  setBusy(
+    true,
+    "Preparing document",
+    `Creating ${format.toUpperCase()} file.`
+  );
+
+  try {
+    const result = await api(
+      `/documents/export/${format}`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          text: lastDocumentResult,
+          content: lastDocumentResult
+        })
+      }
+    );
+
+    let blob = result;
+
+    if (result && !(result instanceof Blob)) {
+      const encoded =
+        result.file_base64 ||
+        result.content_base64;
+
+      if (encoded) {
+        const binary = atob(encoded);
+
+        const bytes = Uint8Array.from(
+          binary,
+          char => char.charCodeAt(0)
         );
 
+        blob = new Blob([bytes]);
+      }
+    }
 
-    conversationRecorder.ondataavailable =
-        event => {
+    if (!(blob instanceof Blob)) {
+      throw new Error(
+        "The export endpoint did not return a downloadable file."
+      );
+    }
 
-            if (event.data.size > 0) {
+    const url = URL.createObjectURL(blob);
 
-                recordedChunks.push(
-                    event.data
-                );
-            }
-        };
+    const link = document.createElement("a");
 
+    link.href = url;
+    link.download = `talkbridge-result.${format}`;
 
-    conversationRecorder.onstop =
-        async () => {
+    document.body.appendChild(link);
 
-            if (!conversationRunning) {
-                return;
-            }
+    link.click();
 
+    link.remove();
 
-            const audioBlob =
-                new Blob(
-                    recordedChunks,
-                    {
-                        type: "audio/webm"
-                    }
-                );
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+    showToast(`${format.toUpperCase()} file downloaded.`);
 
-            if (audioBlob.size > 1000) {
+  } catch (error) {
+    showToast(error.message);
 
-                await processConversationAudio(
-                    audioBlob
-                );
+  } finally {
+    setBusy(false);
+  }
+}
 
-            } else {
+/* =======================================================
+   DOCUMENT TO AUDIO
+======================================================= */
 
-                if (conversationRunning) {
+async function generateDocumentAudio() {
+  if (!lastDocumentResult) {
+    throw new Error(
+      "Process a document before generating audio."
+    );
+  }
 
-                    startConversationRecording();
-                }
-            }
-        };
+  const result = await api("/documents/audio", {
+    method: "POST",
 
+    headers: {
+      "Content-Type": "application/json"
+    },
 
-    // Record a short chunk.
-    // The loop starts the next chunk automatically.
+    body: JSON.stringify({
+      text: lastDocumentResult,
+      voice: "alloy"
+    })
+  });
+
+  if (result instanceof Blob) {
+    return result;
+  }
+
+  if (result.audio_base64) {
+    const binary = atob(result.audio_base64);
+
+    const bytes = Uint8Array.from(
+      binary,
+      char => char.charCodeAt(0)
+    );
+
+    return new Blob(
+      [bytes],
+      { type: "audio/mpeg" }
+    );
+  }
+
+  if (result.audio_url) {
+    const response = await fetch(result.audio_url);
+
+    if (!response.ok) {
+      throw new Error("Could not download generated audio.");
+    }
+
+    return response.blob();
+  }
+
+  throw new Error(
+    "The document audio endpoint returned no audio."
+  );
+}
+
+async function downloadDocumentAudio() {
+  setBusy(
+    true,
+    "Generating document audio",
+    "Converting your document result into speech."
+  );
+
+  try {
+    documentAudioBlob = await generateDocumentAudio();
+
+    const url = URL.createObjectURL(documentAudioBlob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "talkbridge-document-audio.mp3";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    $("documentAudioStatus").textContent =
+      "Audio downloaded.";
+
+    showToast("Document audio downloaded.");
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* =======================================================
+   SPEECH INTELLIGENCE
+======================================================= */
+
+function setupSpeech() {
+  $("chooseSpeechFile").addEventListener("click", () => {
+    $("speechFile").click();
+  });
+
+  $("speechFile").addEventListener("change", event => {
+    selectedSpeechFile = event.target.files[0] || null;
+
+    $("speechFileName").textContent =
+      selectedSpeechFile
+        ? selectedSpeechFile.name
+        : "";
+  });
+
+  $("startSpeechRecording").addEventListener(
+    "click",
+    startSpeechRecording
+  );
+
+  $("stopSpeechRecording").addEventListener(
+    "click",
+    stopSpeechRecording
+  );
+
+  $("transcribeSpeech").addEventListener(
+    "click",
+    transcribeSpeech
+  );
+
+  $("saveTranscript").addEventListener("click", () => {
+    if (!lastTranscript) return;
+
+    saveResult(
+      "speech",
+      "Speech transcription",
+      lastTranscript
+    );
+  });
+
+  $("startConversation").addEventListener(
+    "click",
+    startConversationRecording
+  );
+
+  $("stopConversation").addEventListener(
+    "click",
+    stopConversationRecording
+  );
+
+  $("saveConversation").addEventListener("click", () => {
+    if (!lastConversation) return;
+
+    saveResult(
+      "conversation",
+      "Translated conversation",
+      `${lastConversation.original_text}\n\n${lastConversation.translated_text}`
+    );
+  });
+}
+
+/* =======================================================
+   SPEECH RECORDING
+======================================================= */
+
+async function startSpeechRecording() {
+  if (
+    !navigator.mediaDevices?.getUserMedia ||
+    !window.MediaRecorder
+  ) {
+    showToast("Microphone recording requires HTTPS or localhost.");
+    return;
+  }
+
+  try {
+    speechStream =
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+    speechChunks = [];
+
+    speechRecorder = new MediaRecorder(speechStream);
+
+    speechRecorder.ondataavailable = event => {
+      if (event.data.size) {
+        speechChunks.push(event.data);
+      }
+    };
+
+    speechRecorder.onstop = () => {
+      const mimeType =
+        speechRecorder?.mimeType || "audio/webm";
+
+      const blob = new Blob(speechChunks, {
+        type: mimeType
+      });
+
+      selectedSpeechFile = new File(
+        [blob],
+        "speech-recording.webm",
+        { type: blob.type }
+      );
+
+      $("speechFileName").textContent =
+        "Recorded audio ready.";
+
+      speechStream
+        ?.getTracks()
+        .forEach(track => track.stop());
+
+      speechStream = null;
+      speechRecorder = null;
+
+      $("speechRecordingStatus").textContent =
+        "Recording completed.";
+
+      $("startSpeechRecording").disabled = false;
+      $("stopSpeechRecording").disabled = true;
+    };
+
+    speechRecorder.start();
+
+    $("startSpeechRecording").disabled = true;
+    $("stopSpeechRecording").disabled = false;
+
+    $("speechRecordingStatus").textContent =
+      "Recording... Speak now.";
+
+  } catch (error) {
+    speechStream
+      ?.getTracks()
+      .forEach(track => track.stop());
+
+    speechStream = null;
+    speechRecorder = null;
+
+    $("startSpeechRecording").disabled = false;
+    $("stopSpeechRecording").disabled = true;
+
+    showToast("Could not access the microphone.");
+  }
+}
+
+function stopSpeechRecording() {
+  if (speechRecorder?.state === "recording") {
+    speechRecorder.stop();
+  }
+}
+
+/* =======================================================
+   SPEECH TRANSCRIPTION
+======================================================= */
+
+async function transcribeSpeech() {
+  if (!selectedSpeechFile) {
+    showToast("Upload or record an audio file first.");
+    return;
+  }
+
+  const form = new FormData();
+
+  form.append("file", selectedSpeechFile);
+  form.append("language", "");
+
+  setBusy(
+    true,
+    "Transcribing speech",
+    "Converting audio into text."
+  );
+
+  try {
+    const result = await api("/speech/transcribe", {
+      method: "POST",
+      body: form
+    });
+
+    lastTranscript =
+      result.transcribed_text ||
+      result.text ||
+      "";
+
+    $("speechTranscript").textContent = lastTranscript;
+
+    $("speechTranscriptSection").classList.remove("hidden");
+
+    addHistory(
+      "speech",
+      "Speech transcription",
+      lastTranscript
+    );
+
+    showToast("Speech transcription completed.");
+
+  } catch (error) {
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* =======================================================
+   TWO-WAY CONVERSATION
+======================================================= */
+
+async function startConversationRecording() {
+  if (
+    !navigator.mediaDevices?.getUserMedia ||
+    !window.MediaRecorder
+  ) {
+    showToast("Microphone recording requires HTTPS or localhost.");
+    return;
+  }
+
+  try {
+    conversationStream =
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+    conversationChunks = [];
+
+    conversationRecorder = new MediaRecorder(
+      conversationStream
+    );
+
+    conversationRecorder.ondataavailable = event => {
+      if (event.data.size) {
+        conversationChunks.push(event.data);
+      }
+    };
+
+    conversationRecorder.onstop = async () => {
+      const mimeType =
+        conversationRecorder?.mimeType || "audio/webm";
+
+      const blob = new Blob(conversationChunks, {
+        type: mimeType
+      });
+
+      conversationStream
+        ?.getTracks()
+        .forEach(track => track.stop());
+
+      conversationStream = null;
+      conversationRecorder = null;
+
+      $("conversationStatus").textContent =
+        "Processing your conversation...";
+
+      $("startConversation").disabled = false;
+      $("stopConversation").disabled = true;
+
+      await processConversation(blob);
+    };
+
     conversationRecorder.start();
 
+    $("startConversation").disabled = true;
+    $("stopConversation").disabled = false;
 
-    setTimeout(() => {
+    $("conversationStatus").textContent =
+      "Recording... Speak now.";
 
-        if (
-            conversationRunning &&
-            conversationRecorder &&
-            conversationRecorder.state === "recording"
-        ) {
+  } catch (error) {
+    conversationStream
+      ?.getTracks()
+      .forEach(track => track.stop());
 
-            conversationRecorder.stop();
-        }
+    conversationStream = null;
+    conversationRecorder = null;
 
-    }, 5000);
+    $("startConversation").disabled = false;
+    $("stopConversation").disabled = true;
+
+    showToast("Could not access the microphone.");
+  }
 }
 
-
-// ============================================================
-// PROCESS CONVERSATION AUDIO
-// ============================================================
-
-async function processConversationAudio(
-    audioBlob
-) {
-
-    if (conversationProcessing) {
-
-        return;
-    }
-
-
-    conversationProcessing = true;
-
-
-    conversationStatus.textContent =
-        "Understanding speech...";
-
-
-    try {
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            "file",
-            audioBlob,
-            "conversation.webm"
-        );
-
-
-        // We deliberately do NOT tell the
-        // transcription endpoint which language
-        // was spoken.
-        //
-        // The backend detects the language.
-
-        const transcriptionResponse =
-            await fetch(
-                `${API_URL}/conversation/transcribe`,
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
-
-
-        const transcriptionData =
-            await transcriptionResponse.json();
-
-
-        if (!transcriptionResponse.ok) {
-
-            throw new Error(
-                transcriptionData.detail ||
-                "Conversation transcription failed."
-            );
-        }
-
-
-        const spokenText =
-            transcriptionData.text.trim();
-
-
-        const detectedLanguage =
-            transcriptionData.language;
-
-
-        if (!spokenText) {
-
-            conversationProcessing = false;
-
-            if (conversationRunning) {
-
-                conversationStatus.textContent =
-                    "Listening...";
-
-                startConversationRecording();
-            }
-
-            return;
-        }
-
-
-        // ====================================================
-        // IMPORTANT:
-        // Only accept one of the two selected languages.
-        // ====================================================
-
-        const fromDetected =
-            languagesMatch(
-                detectedLanguage,
-                fromLanguage
-            );
-
-        const toDetected =
-            languagesMatch(
-                detectedLanguage,
-                toLanguage
-            );
-
-
-        let targetLanguage;
-
-
-        if (fromDetected) {
-
-            targetLanguage =
-                toLanguage;
-
-        } else if (toDetected) {
-
-            targetLanguage =
-                fromLanguage;
-
-        } else {
-
-            // The AI heard another language.
-            // We don't translate it.
-
-            addConversationMessage({
-
-                detected:
-                    detectedLanguage ||
-                    "Unknown",
-
-                original:
-                    spokenText,
-
-                translation:
-                    "This is not one of the two selected languages."
-            });
-
-
-            conversationProcessing = false;
-
-            if (conversationRunning) {
-
-                conversationStatus.textContent =
-                    "Listening...";
-
-                startConversationRecording();
-            }
-
-            return;
-        }
-
-
-        conversationStatus.textContent =
-            `Detected ${getLanguageName(detectedLanguage)} → ${targetLanguage.name}`;
-
-
-        // ====================================================
-        // TRANSLATE
-        // ====================================================
-
-        const translationResponse =
-            await fetch(
-                `${API_URL}/translate`,
-                {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-
-                        text:
-                            spokenText,
-
-                        source_language:
-                            getLanguageName(
-                                detectedLanguage
-                            ),
-
-                        target_language:
-                            targetLanguage.name
-                    })
-                }
-            );
-
-
-        const translationData =
-            await translationResponse.json();
-
-
-        if (!translationResponse.ok) {
-
-            throw new Error(
-                translationData.detail ||
-                "Conversation translation failed."
-            );
-        }
-
-
-        const translatedText =
-            translationData.translation;
-
-
-        addConversationMessage({
-
-            detected:
-                getLanguageName(
-                    detectedLanguage
-                ),
-
-            original:
-                spokenText,
-
-            translation:
-                translatedText
-        });
-
-
-        // ====================================================
-        // SPEAK TRANSLATION
-        // ====================================================
-
-        if (autoPlay) {
-
-            await playTranslationAudio(
-                translatedText,
-                targetLanguage.code
-            );
-        }
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        addConversationMessage({
-
-            detected: "Error",
-
-            original: "Could not understand audio.",
-
-            translation: error.message
-        });
-
-    } finally {
-
-        conversationProcessing = false;
-
-
-        if (conversationRunning) {
-
-            conversationStatus.textContent =
-                "Listening...";
-
-            // Start receiving another chunk.
-            startConversationRecording();
-        }
-    }
+function stopConversationRecording() {
+  if (conversationRecorder?.state === "recording") {
+    conversationRecorder.stop();
+  }
 }
 
+async function processConversation(blob) {
+  const form = new FormData();
 
-// ============================================================
-// LANGUAGE MATCHING
-// ============================================================
+  form.append("file", blob, "conversation.webm");
 
-function languagesMatch(
-    detectedCode,
-    language
-) {
+  form.append(
+    "source_language",
+    $("conversationSource").value
+  );
 
-    if (!detectedCode) {
-        return false;
-    }
+  form.append(
+    "target_language",
+    $("conversationTarget").value
+  );
 
+  form.append(
+    "voice",
+    $("conversationVoice").value
+  );
 
-    const detected =
-        detectedCode.toLowerCase();
+  setBusy(
+    true,
+    "Translating conversation",
+    "Transcribing and translating your message."
+  );
 
-
-    const selected =
-        language.code.toLowerCase();
-
-
-    if (detected === selected) {
-        return true;
-    }
-
-
-    // Some APIs may return language
-    // variants such as en-US.
-
-    if (
-        detected.startsWith(
-            selected + "-"
-        )
-    ) {
-
-        return true;
-    }
-
-
-    return false;
-}
-
-
-function getLanguageName(code) {
-
-    if (!code) {
-        return "Unknown";
-    }
-
-
-    const normalized =
-        code.toLowerCase();
-
-
-    const language =
-        languages.find(
-            item =>
-                item.code.toLowerCase() ===
-                normalized
-        );
-
-
-    if (language) {
-        return language.name;
-    }
-
-
-    return code;
-}
-
-
-// ============================================================
-// CONVERSATION MESSAGE UI
-// ============================================================
-
-function addConversationMessage({
-    detected,
-    original,
-    translation
-}) {
-
-    const empty =
-        conversationMessages.querySelector(
-            ".empty-conversation"
-        );
-
-
-    if (empty) {
-        empty.remove();
-    }
-
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        "conversation-message";
-
-
-    message.innerHTML = `
-
-        <div class="detected-language">
-            Detected: ${escapeHtml(detected)}
-        </div>
-
-        <div class="original-text">
-            ${escapeHtml(original)}
-        </div>
-
-        <div class="translated-text">
-            → ${escapeHtml(translation)}
-        </div>
-
-    `;
-
-
-    conversationMessages.appendChild(
-        message
+  try {
+    const result = await api(
+      "/speech/conversation-turn",
+      {
+        method: "POST",
+        body: form
+      }
     );
 
+    const original =
+      result.original_text ||
+      result.transcribed_text ||
+      "";
 
-    conversationMessages.scrollTop =
-        conversationMessages.scrollHeight;
+    const translated =
+      result.translated_text || "";
+
+    lastConversation = {
+      original_text: original,
+      translated_text: translated
+    };
+
+    $("conversationOriginal").textContent = original;
+
+    $("conversationTranslated").textContent = translated;
+
+    $("conversationResultSection").classList.remove("hidden");
+
+    // Remove previous conversation audio URL.
+    if (conversationAudioUrl) {
+      URL.revokeObjectURL(conversationAudioUrl);
+      conversationAudioUrl = null;
+    }
+
+    const audioBase64 = result.audio_base64;
+
+    if (audioBase64) {
+      const binary = atob(audioBase64);
+
+      const bytes = Uint8Array.from(
+        binary,
+        char => char.charCodeAt(0)
+      );
+
+      const audioBlob = new Blob(
+        [bytes],
+        { type: "audio/mpeg" }
+      );
+
+      conversationAudioUrl =
+        URL.createObjectURL(audioBlob);
+
+      $("conversationAudio").src =
+        conversationAudioUrl;
+
+      $("conversationAudio").classList.remove("hidden");
+
+      if (preferences.autoplay) {
+        $("conversationAudio").play().catch(() => {});
+      }
+
+    } else if (result.audio_url) {
+      $("conversationAudio").src = result.audio_url;
+
+      $("conversationAudio").classList.remove("hidden");
+
+      if (preferences.autoplay) {
+        $("conversationAudio").play().catch(() => {});
+      }
+
+    } else {
+      $("conversationAudio").removeAttribute("src");
+
+      $("conversationAudio").classList.add("hidden");
+    }
+
+    addHistory(
+      "conversation",
+      `${$("conversationSource").value} → ${$("conversationTarget").value}`,
+      `${original}\n\n${translated}`
+    );
+
+    $("conversationStatus").textContent =
+      "Conversation completed.";
+
+    showToast("Conversation translated.");
+
+  } catch (error) {
+    $("conversationStatus").textContent =
+      "Conversation failed.";
+
+    showToast(error.message);
+
+  } finally {
+    setBusy(false);
+  }
 }
 
+/* =======================================================
+   FILE DROP AREAS
+======================================================= */
 
-function escapeHtml(value) {
+function setupDropArea(element, callback) {
+  if (!element) return;
 
-    const div =
-        document.createElement("div");
+  ["dragenter", "dragover"].forEach(name => {
+    element.addEventListener(name, event => {
+      event.preventDefault();
 
-    div.textContent = value;
+      element.classList.add("drag-over");
+    });
+  });
 
-    return div.innerHTML;
+  ["dragleave", "drop"].forEach(name => {
+    element.addEventListener(name, event => {
+      event.preventDefault();
+
+      element.classList.remove("drag-over");
+    });
+  });
+
+  element.addEventListener("drop", event => {
+    const file = event.dataTransfer?.files?.[0];
+
+    if (file) {
+      callback(file);
+    }
+  });
 }
 
+/* =======================================================
+   INITIALIZATION
+======================================================= */
 
-// ============================================================
-// SETTINGS
-// ============================================================
+function initializeTalkBridge() {
+  fillLanguages();
 
-settingsButton.addEventListener(
-    "click",
-    () => {
+  applyPreferences();
 
-        settingsModal.classList.remove(
-            "hidden"
-        );
-    }
-);
+  setupNavigation();
 
+  setupHistoryAndSaved();
 
-closeSettingsModal.addEventListener(
-    "click",
-    () => {
+  setupTranslation();
 
-        settingsModal.classList.add(
-            "hidden"
-        );
-    }
-);
+  setupImage();
 
+  setupWriting();
 
-autoPlayCheckbox.addEventListener(
-    "change",
-    () => {
+  setupDocuments();
 
-        autoPlay =
-            autoPlayCheckbox.checked;
-    }
-);
+  setupSpeech();
 
+  setupPreferences();
 
-speechSpeedSelect.addEventListener(
-    "change",
-    () => {
+  renderHistory();
 
-        speechSpeed =
-            Number(
-                speechSpeedSelect.value
-            );
-    }
-);
+  renderSaved();
 
+  renderRecent();
 
-// ============================================================
-// CLOSE MODALS WHEN CLICKING OUTSIDE
-// ============================================================
+  console.log("TalkBridge 2.0 frontend initialized.");
+}
 
-window.addEventListener(
-    "click",
-    event => {
-
-        if (
-            event.target ===
-            languageModal
-        ) {
-
-            closeLanguageSelector();
-        }
-
-
-        if (
-            event.target ===
-            settingsModal
-        ) {
-
-            settingsModal.classList.add(
-                "hidden"
-            );
-        }
-    }
+document.addEventListener(
+  "DOMContentLoaded",
+  initializeTalkBridge
 );

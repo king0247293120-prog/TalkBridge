@@ -1,489 +1,649 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>TalkBridge</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a56">
+  <meta name="description" content="TalkBridge - Speak without limits.">
+  <title>TalkBridge | Speak Without Limits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+  <div class="app-shell">
 
-<div class="app">
+    <aside class="sidebar" id="sidebar">
+      <a href="#" class="brand" data-page="overview">
+        <span class="brand-mark">T</span>
+        <span class="brand-name">TalkBridge</span>
+      </a>
 
-    <!-- HEADER -->
-    <header class="header">
+      <div class="sidebar-label">WORKSPACE</div>
 
-        <div class="brand">
-            <div class="logo">TB</div>
+      <nav class="nav-menu">
+        <button class="nav-link active" data-page="overview">
+          <span class="nav-icon">⌂</span><span>Overview</span>
+        </button>
+        <button class="nav-link" data-page="translate">
+          <span class="nav-icon">⇄</span><span>Translate</span>
+        </button>
+        <button class="nav-link" data-page="image">
+          <span class="nav-icon">▧</span><span>Image Intelligence</span>
+        </button>
+        <button class="nav-link" data-page="writing">
+          <span class="nav-icon">✎</span><span>AI Writing</span>
+        </button>
+        <button class="nav-link" data-page="documents">
+          <span class="nav-icon">▤</span><span>Documents</span>
+        </button>
+        <button class="nav-link" data-page="speech">
+          <span class="nav-icon">♫</span><span>Speech & Voice</span>
+        </button>
+      </nav>
 
+      <div class="sidebar-label secondary-label">PERSONAL</div>
+
+      <nav class="nav-menu">
+        <button class="nav-link" data-page="history">
+          <span class="nav-icon">◷</span><span>History</span>
+        </button>
+        <button class="nav-link" data-page="saved">
+          <span class="nav-icon">☆</span><span>Saved</span>
+        </button>
+        <button class="nav-link" data-page="preferences">
+          <span class="nav-icon">⚙</span><span>Preferences</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-help">
+          <div class="help-icon">?</div>
+          <div>
+            <strong>Need assistance?</strong>
+            <p>Explore TalkBridge tools.</p>
+          </div>
+        </div>
+        <div class="sidebar-footer">TalkBridge 2.0</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+        <div class="breadcrumb">
+          <span>Workspace</span>
+          <span class="breadcrumb-separator">/</span>
+          <strong id="currentPageName">Overview</strong>
+        </div>
+        <div class="top-actions">
+          <span class="top-status"><i></i> Workspace</span>
+        </div>
+      </header>
+
+      <div class="content-area">
+
+        <!-- OVERVIEW -->
+        <section class="page active" id="page-overview">
+          <div class="welcome-section">
             <div>
-                <h1>TalkBridge</h1>
-                <p>Speak without limits</p>
+              <span class="eyebrow">YOUR LANGUAGE WORKSPACE</span>
+              <h1>Hello, welcome to TalkBridge.</h1>
+              <p>Translate, understand, write and communicate without limits.</p>
             </div>
-        </div>
+            <div class="welcome-decoration">TB</div>
+          </div>
 
-        <button class="settings-button" id="settingsButton">
-            ⚙
-        </button>
-
-    </header>
-
-
-    <!-- MAIN -->
-    <main>
-
-        <section class="hero">
-
-            <div class="online-dot"></div>
-
-            <p class="status">
-                AI translation
-            </p>
-
-            <h2>
-                Hello 👋
-            </h2>
-
-            <p>
-                Translate between two languages using text or your voice.
-            </p>
-
-        </section>
-
-
-        <!-- LANGUAGE SELECTOR -->
-        <section class="language-card">
-
-            <div class="language-side">
-
-                <span class="language-label">
-                    FROM
-                </span>
-
-                <button
-                    class="language-button"
-                    id="fromLanguageButton"
-                >
-                    <span id="fromFlag">🇬🇧</span>
-                    <span id="fromLanguage">English</span>
-                    <span class="arrow">⌄</span>
-                </button>
-
+          <div class="section-heading">
+            <div>
+              <h2>Your workspace</h2>
+              <p>Choose a tool to get started.</p>
             </div>
+          </div>
 
-
-            <button
-                class="swap-button"
-                id="swapButton"
-                title="Swap languages"
-            >
-                ⇄
+          <div class="department-grid">
+            <button class="department-card" data-open="translate">
+              <span class="department-icon blue">⇄</span>
+              <h3>Translation Intelligence</h3>
+              <p>Translate text between languages, including African languages.</p>
+              <span class="card-link">Open translator →</span>
             </button>
 
-
-            <div class="language-side">
-
-                <span class="language-label">
-                    TO
-                </span>
-
-                <button
-                    class="language-button"
-                    id="toLanguageButton"
-                >
-                    <span id="toFlag">🇨🇳</span>
-                    <span id="toLanguage">Chinese</span>
-                    <span class="arrow">⌄</span>
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- INPUT -->
-        <section class="translation-card">
-
-            <div class="card-header">
-
-                <span id="inputLanguageTitle">
-                    English
-                </span>
-
-                <span id="characterCount">
-                    0 / 1000
-                </span>
-
-            </div>
-
-
-            <textarea
-                id="textInput"
-                maxlength="1000"
-                placeholder="Type something to translate..."
-            ></textarea>
-
-
-            <div class="input-actions">
-
-                <button
-                    class="icon-button"
-                    id="clearButton"
-                    title="Clear"
-                >
-                    ✕
-                </button>
-
-                <button
-                    class="mic-button"
-                    id="micButton"
-                    title="Speak"
-                >
-                    🎤
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- TRANSLATE BUTTON -->
-        <button
-            class="translate-button"
-            id="translateButton"
-        >
-            <span>Translate</span>
-            <span>→</span>
-        </button>
-
-
-        <!-- OUTPUT -->
-        <section
-            class="translation-card output-card"
-            id="outputCard"
-        >
-
-            <div class="card-header">
-
-                <span id="outputLanguageTitle">
-                    Chinese
-                </span>
-
-                <button
-                    class="speaker-button"
-                    id="speakerButton"
-                    title="Play translation"
-                >
-                    🔊
-                </button>
-
-            </div>
-
-
-            <div
-                class="translation-result"
-                id="translationResult"
-            >
-                Your translation will appear here.
-            </div>
-
-        </section>
-
-
-        <!-- CONVERSATION -->
-        <section class="conversation-card">
-
-            <div class="conversation-info">
-
-                <div class="conversation-icon">
-                    💬
-                </div>
-
-                <div>
-
-                    <h3>
-                        Conversation Mode
-                    </h3>
-
-                    <p>
-                        Talk naturally between two languages.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <button
-                class="conversation-button"
-                id="conversationButton"
-            >
-                Start Conversation
+            <button class="department-card" data-open="image">
+              <span class="department-icon purple">▧</span>
+              <h3>Image Intelligence</h3>
+              <p>Understand images, extract text and translate visual content.</p>
+              <span class="card-link">Explore images →</span>
             </button>
 
-        </section>
-
-    </main>
-
-
-    <!-- LANGUAGE MODAL -->
-    <div
-        class="modal hidden"
-        id="languageModal"
-    >
-
-        <div class="modal-box">
-
-            <div class="modal-header">
-
-                <h3 id="languageModalTitle">
-                    Select Language
-                </h3>
-
-                <button
-                    class="close-button"
-                    id="closeLanguageModal"
-                >
-                    ✕
-                </button>
-
-            </div>
-
-
-            <input
-                type="text"
-                id="languageSearch"
-                class="search-input"
-                placeholder="Search language..."
-            >
-
-
-            <div
-                class="language-list"
-                id="languageList"
-            ></div>
-
-        </div>
-
-    </div>
-
-
-    <!-- CONVERSATION MODAL -->
-    <div
-        class="modal hidden"
-        id="conversationModal"
-    >
-
-        <div class="modal-box conversation-box">
-
-            <div class="modal-header">
-
-                <div>
-
-                    <h3>
-                        Conversation Mode
-                    </h3>
-
-                    <p class="modal-subtitle">
-                        Talk in either selected language.
-                    </p>
-
-                </div>
-
-                <button
-                    class="close-button"
-                    id="closeConversationModal"
-                >
-                    ✕
-                </button>
-
-            </div>
-
-
-            <!-- SELECTED LANGUAGES -->
-            <div class="conversation-languages">
-
-                <div class="conversation-language">
-                    <span id="conversationFromFlag">
-                        🇬🇧
-                    </span>
-
-                    <strong id="conversationFromLanguage">
-                        English
-                    </strong>
-                </div>
-
-
-                <span class="conversation-arrow">
-                    ⇄
-                </span>
-
-
-                <div class="conversation-language">
-                    <span id="conversationToFlag">
-                        🇨🇳
-                    </span>
-
-                    <strong id="conversationToLanguage">
-                        Chinese
-                    </strong>
-                </div>
-
-            </div>
-
-
-            <!-- STATUS -->
-            <div
-                class="conversation-status"
-                id="conversationStatus"
-            >
-                Ready
-            </div>
-
-
-            <!-- LIVE RESULT -->
-            <div
-                class="conversation-messages"
-                id="conversationMessages"
-            >
-
-                <div class="empty-conversation">
-                    Press the microphone to start.
-                </div>
-
-            </div>
-
-
-            <!-- MICROPHONE -->
-            <button
-                class="conversation-mic"
-                id="conversationMic"
-            >
-                <span class="mic-symbol">
-                    🎤
-                </span>
-
-                <span id="conversationMicText">
-                    Start Listening
-                </span>
+            <button class="department-card" data-open="writing">
+              <span class="department-icon orange">✎</span>
+              <h3>Writing Intelligence</h3>
+              <p>Correct, rewrite, summarize and improve your writing.</p>
+              <span class="card-link">Improve writing →</span>
             </button>
 
+            <button class="department-card" data-open="documents">
+              <span class="department-icon green">▤</span>
+              <h3>Document Intelligence</h3>
+              <p>Extract, understand, summarize and translate documents.</p>
+              <span class="card-link">Open documents →</span>
+            </button>
 
-            <p class="conversation-hint">
-                Keep the microphone active while both people speak.
-                Press again to stop.
-            </p>
+            <button class="department-card" data-open="speech">
+              <span class="department-icon pink">♫</span>
+              <h3>Speech Intelligence</h3>
+              <p>Transcribe speech and communicate through voice.</p>
+              <span class="card-link">Open speech tools →</span>
+            </button>
+          </div>
 
-        </div>
-
-    </div>
-
-
-    <!-- SETTINGS -->
-    <div
-        class="modal hidden"
-        id="settingsModal"
-    >
-
-        <div class="modal-box">
-
-            <div class="modal-header">
-
-                <h3>
-                    Settings
-                </h3>
-
-                <button
-                    class="close-button"
-                    id="closeSettingsModal"
-                >
-                    ✕
-                </button>
-
+          <div class="overview-bottom">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Recent activity</h3>
+                  <p>Your latest TalkBridge activities.</p>
+                </div>
+                <button class="text-button" data-open="history">View all</button>
+              </div>
+              <div id="overviewRecent" class="recent-list">
+                <div class="empty-state">Your recent activities will appear here.</div>
+              </div>
             </div>
 
+            <div class="panel quick-panel">
+              <h3>Quick actions</h3>
+              <p>Jump straight into your favourite tools.</p>
+              <button class="quick-action" data-open="translate">⇄ <span>Translate text</span><b>→</b></button>
+              <button class="quick-action" data-open="writing">✎ <span>Improve writing</span><b>→</b></button>
+              <button class="quick-action" data-open="documents">▤ <span>Process a document</span><b>→</b></button>
+            </div>
+          </div>
+        </section>
 
-            <div class="setting-row">
+        <!-- TRANSLATION -->
+        <section class="page" id="page-translate">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">TRANSLATION INTELLIGENCE</span>
+              <h1>Translate anything.</h1>
+              <p>Understand and communicate across languages.</p>
+            </div>
+          </div>
 
-                <div>
-                    <strong>Audio output</strong>
-                    <p>Play translated speech automatically.</p>
-                </div>
-
-                <label class="switch">
-
-                    <input
-                        type="checkbox"
-                        id="autoPlay"
-                        checked
-                    >
-
-                    <span class="slider"></span>
-
-                </label>
-
+          <div class="panel translation-panel">
+            <div class="language-bar">
+              <div class="language-field">
+                <label for="sourceLanguage">Translate from</label>
+                <select id="sourceLanguage"></select>
+              </div>
+              <button class="swap-button" id="swapLanguages" title="Swap languages">⇄</button>
+              <div class="language-field">
+                <label for="targetLanguage">Translate to</label>
+                <select id="targetLanguage"></select>
+              </div>
             </div>
 
-
-            <div class="setting-row">
-
-                <div>
-                    <strong>Speech speed</strong>
-                    <p>Control translated audio speed.</p>
+            <div class="translation-grid">
+              <div class="text-pane">
+                <div class="pane-heading">
+                  <span>Original text</span>
+                  <span id="sourceCount">0 / 10000</span>
                 </div>
+                <textarea id="translationInput" maxlength="10000" placeholder="Enter text, paste content or use your microphone..."></textarea>
+                <div class="pane-tools">
+                  <button class="tool-button" id="clearTranslation">Clear</button>
+                  <button class="tool-button" id="translationMic">🎙 Speak</button>
+                </div>
+              </div>
 
-                <select id="speechSpeed">
+              <div class="text-pane output-pane">
+                <div class="pane-heading">
+                  <span>Translation</span>
+                  <span id="translationStatus">Ready</span>
+                </div>
+                <div class="translation-output" id="translationOutput">
+                  <span class="output-placeholder">Your translation will appear here.</span>
+                </div>
+                <div class="pane-tools">
+                  <button class="tool-button" id="speakTranslation">🔊 Listen</button>
+                  <button class="tool-button" id="copyTranslation">Copy</button>
+                  <button class="tool-button" id="saveTranslation">☆ Save</button>
+                </div>
+              </div>
+            </div>
 
-                    <option value="0.75">
-                        0.75x
-                    </option>
+            <div class="translation-footer">
+              <div id="translationMicStatus" class="recording-status hidden">
+                <span class="recording-dot"></span>
+                <span id="translationMicText">Listening...</span>
+                <button id="cancelTranslationMic" class="text-button">Cancel</button>
+              </div>
+              <button class="primary-button" id="translateButton">Translate text <span>→</span></button>
+            </div>
+          </div>
+        </section>
 
-                    <option value="1" selected>
-                        1.0x
-                    </option>
+        <!-- IMAGE INTELLIGENCE -->
+        <section class="page" id="page-image">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">IMAGE INTELLIGENCE</span>
+              <h1>Understand images.</h1>
+              <p>Upload an image to analyze it, extract text or translate its content.</p>
+            </div>
+          </div>
 
-                    <option value="1.25">
-                        1.25x
-                    </option>
+          <div class="panel">
+            <div class="upload-area" id="imageDropArea">
+              <input type="file" id="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+              <div class="upload-icon">▧</div>
+              <h3>Upload an image</h3>
+              <p>Choose a photograph, screenshot, poster, sign or document image.</p>
+              <button class="secondary-button" id="chooseImage">Choose image</button>
+              <span class="upload-note">JPEG, PNG, WEBP or GIF · Maximum 10 MB</span>
+            </div>
 
-                    <option value="1.5">
-                        1.5x
-                    </option>
+            <div id="imagePreviewContainer" class="image-preview-container hidden">
+              <img id="imagePreview" alt="Selected image preview">
+              <div>
+                <strong id="imageFileName"></strong>
+                <button class="text-button" id="removeImage">Remove image</button>
+              </div>
+            </div>
 
+            <div class="form-group">
+              <label for="imageQuestion">What would you like to know?</label>
+              <textarea id="imageQuestion" rows="3" placeholder="Describe this image, identify objects, read the text or ask a question...">Describe this image in detail.</textarea>
+            </div>
+
+            <div class="button-row">
+              <button class="primary-button" id="analyzeImage">Analyze image</button>
+              <button class="secondary-button" id="extractImageText">Extract text (OCR)</button>
+            </div>
+
+            <div id="imageResultSection" class="result-section hidden">
+              <div class="result-heading">
+                <h3>Image result</h3>
+                <button class="text-button" id="saveImageResult">☆ Save</button>
+              </div>
+              <div class="result-content" id="imageResult"></div>
+              <div class="form-group">
+                <label for="imageTargetLanguage">Translate extracted text into</label>
+                <select id="imageTargetLanguage"></select>
+              </div>
+              <button class="primary-button" id="translateImageText">Translate extracted text</button>
+              <div id="imageTranslationResult" class="result-content hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WRITING INTELLIGENCE -->
+        <section class="page" id="page-writing">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">WRITING INTELLIGENCE</span>
+              <h1>Make your writing better.</h1>
+              <p>Improve clarity, grammar, tone and the way you express ideas.</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="writingTask">Choose a writing tool</label>
+                <select id="writingTask">
+                  <option value="correct">Grammar and spelling correction</option>
+                  <option value="paraphrase">Paraphrase</option>
+                  <option value="rewrite">Rewrite</option>
+                  <option value="summarize">Summarize</option>
+                  <option value="expand">Expand text</option>
+                  <option value="shorten">Shorten text</option>
+                  <option value="change_tone">Change tone</option>
+                  <option value="improve_clarity">Improve clarity</option>
                 </select>
+              </div>
 
+              <div class="form-group">
+                <label for="writingTone">Writing tone</label>
+                <select id="writingTone">
+                  <option value="">Default</option>
+                  <option value="professional">Professional</option>
+                  <option value="academic">Academic</option>
+                  <option value="formal">Formal</option>
+                  <option value="casual">Casual</option>
+                  <option value="friendly">Friendly</option>
+                  <option value="simple">Simple</option>
+                  <option value="persuasive">Persuasive</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="writingLength">Output length</label>
+                <select id="writingLength">
+                  <option value="medium">Medium</option>
+                  <option value="short">Short</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="writingLanguage">Output language</label>
+                <select id="writingLanguage" class="language-options"></select>
+              </div>
             </div>
 
-        </div>
+            <div class="form-group">
+              <label for="writingInput">Your text</label>
+              <textarea id="writingInput" rows="9" maxlength="50000" placeholder="Paste or type the text you want to improve..."></textarea>
+            </div>
 
+            <button class="primary-button" id="processWriting">Process writing <span>→</span></button>
+
+            <div id="writingResultSection" class="result-section hidden">
+              <div class="result-heading">
+                <h3>Improved text</h3>
+                <div class="inline-actions">
+                  <button class="text-button" id="copyWriting">Copy</button>
+                  <button class="text-button" id="saveWriting">☆ Save</button>
+                </div>
+              </div>
+              <div id="writingOutput" class="result-content"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DOCUMENT INTELLIGENCE -->
+        <section class="page" id="page-documents">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">DOCUMENT INTELLIGENCE</span>
+              <h1>Work smarter with documents.</h1>
+              <p>Extract, summarize, translate and understand your files.</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="upload-area document-upload" id="documentDropArea">
+              <input type="file" id="documentFile" accept=".pdf,.docx,.txt,.xlsx" hidden>
+              <div class="upload-icon">▤</div>
+              <h3>Upload a document</h3>
+              <p>PDF, Word, TXT or Excel documents.</p>
+              <button class="secondary-button" id="chooseDocument">Choose document</button>
+              <span class="upload-note">Supported: PDF, DOCX, TXT and XLSX</span>
+            </div>
+
+            <div id="documentFileInfo" class="file-info hidden">
+              <span class="file-icon">▤</span>
+              <div>
+                <strong id="documentFileName"></strong>
+                <span id="documentFileSize"></span>
+              </div>
+              <button class="text-button" id="removeDocument">Remove</button>
+            </div>
+
+            <div class="form-grid document-controls">
+              <div class="form-group">
+                <label for="documentTask">What should TalkBridge do?</label>
+                <select id="documentTask">
+                  <option value="extract">Extract document content</option>
+                  <option value="summarize">Summarize document</option>
+                  <option value="explain">Explain document</option>
+                  <option value="translate">Translate document</option>
+                  <option value="ask">Ask a question about document</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="documentLength">Summary length</label>
+                <select id="documentLength">
+                  <option value="medium">Medium</option>
+                  <option value="short">Short</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="documentTargetLanguage">Target language</label>
+                <select id="documentTargetLanguage" class="language-options"></select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="documentQuestion">Question or additional instruction</label>
+              <textarea id="documentQuestion" rows="3" placeholder="Enter a question, translation instruction or leave blank..."></textarea>
+            </div>
+
+            <button class="primary-button" id="processDocument">Process document <span>→</span></button>
+
+            <div id="documentResultSection" class="result-section hidden">
+              <div class="result-heading">
+                <h3>Document result</h3>
+                <button class="text-button" id="saveDocumentResult">☆ Save</button>
+              </div>
+              <div id="documentOutput" class="result-content document-output"></div>
+
+              <div class="document-result-actions">
+                <button class="secondary-button" id="exportDocx">Export DOCX</button>
+                <button class="secondary-button" id="exportTxt">Export TXT</button>
+                <button class="secondary-button" id="speakDocument">🔊 Read aloud</button>
+                <button class="secondary-button" id="downloadDocumentAudio">Download audio</button>
+              </div>
+              <div id="documentAudioStatus" class="small-status"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SPEECH INTELLIGENCE -->
+        <section class="page" id="page-speech">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">SPEECH INTELLIGENCE</span>
+              <h1>Let your voice do the talking.</h1>
+              <p>Convert speech into text and communicate across languages.</p>
+            </div>
+          </div>
+
+          <div class="speech-grid">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Speech transcription</h3>
+                  <p>Upload an audio file or record your voice.</p>
+                </div>
+              </div>
+
+              <input type="file" id="speechFile" accept="audio/*" hidden>
+              <button class="upload-audio-button" id="chooseSpeechFile">＋ Upload audio file</button>
+              <div id="speechFileName" class="small-status"></div>
+
+              <div class="record-box">
+                <div class="record-circle">🎙</div>
+                <h3>Record your voice</h3>
+                <p id="speechRecordingStatus">Ready to record</p>
+                <div class="button-row centered">
+                  <button class="primary-button" id="startSpeechRecording">Start recording</button>
+                  <button class="secondary-button" id="stopSpeechRecording" disabled>Stop</button>
+                </div>
+              </div>
+
+              <button class="primary-button full-width" id="transcribeSpeech">Transcribe audio</button>
+
+              <div id="speechTranscriptSection" class="result-section hidden">
+                <div class="result-heading">
+                  <h3>Transcription</h3>
+                  <button class="text-button" id="saveTranscript">☆ Save</button>
+                </div>
+                <div id="speechTranscript" class="result-content"></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Live conversation</h3>
+                  <p>Record a message and receive its translation.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="conversationSource">Your language</label>
+                <select id="conversationSource" class="language-options"></select>
+              </div>
+              <div class="form-group">
+                <label for="conversationTarget">Other person's language</label>
+                <select id="conversationTarget" class="language-options"></select>
+              </div>
+              <div class="form-group">
+                <label for="conversationVoice">Output voice</label>
+                <select id="conversationVoice">
+                  <option value="alloy">Alloy</option>
+                  <option value="ash">Ash</option>
+                  <option value="coral">Coral</option>
+                  <option value="echo">Echo</option>
+                  <option value="fable">Fable</option>
+                  <option value="onyx">Onyx</option>
+                  <option value="nova">Nova</option>
+                  <option value="sage">Sage</option>
+                  <option value="shimmer">Shimmer</option>
+                </select>
+              </div>
+
+              <div class="conversation-box">
+                <div class="conversation-icon">♫</div>
+                <h3>Conversation recording</h3>
+                <p id="conversationStatus">Record your message to begin.</p>
+                <button class="primary-button full-width" id="startConversation">Start conversation turn</button>
+                <button class="secondary-button full-width" id="stopConversation" disabled>Stop recording</button>
+              </div>
+
+              <div id="conversationResultSection" class="result-section hidden">
+                <div class="result-heading">
+                  <h3>Conversation result</h3>
+                  <button class="text-button" id="saveConversation">☆ Save</button>
+                </div>
+                <div class="conversation-result">
+                  <label>Original speech</label>
+                  <div id="conversationOriginal" class="result-content"></div>
+                  <label>Translation</label>
+                  <div id="conversationTranslated" class="result-content"></div>
+                </div>
+                <audio id="conversationAudio" controls class="audio-player hidden"></audio>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- HISTORY -->
+        <section class="page" id="page-history">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">PERSONAL WORKSPACE</span>
+              <h1>Your history.</h1>
+              <p>Review your recent activities on this device.</p>
+            </div>
+            <button class="secondary-button" id="clearHistory">Clear history</button>
+          </div>
+          <div class="panel">
+            <div id="historyList" class="activity-list">
+              <div class="empty-state">No activity yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SAVED -->
+        <section class="page" id="page-saved">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">PERSONAL WORKSPACE</span>
+              <h1>Your saved results.</h1>
+              <p>Keep useful translations, writing and document results.</p>
+            </div>
+            <button class="secondary-button" id="clearSaved">Clear saved items</button>
+          </div>
+          <div class="panel">
+            <div id="savedList" class="activity-list">
+              <div class="empty-state">You haven't saved anything yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PREFERENCES -->
+        <section class="page" id="page-preferences">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">PERSONALIZATION</span>
+              <h1>Preferences.</h1>
+              <p>Adjust how TalkBridge behaves on this device.</p>
+            </div>
+          </div>
+
+          <div class="panel preferences-panel">
+            <h3>Language preferences</h3>
+            <p>Set your preferred languages for translation.</p>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="prefSource">Default source language</label>
+                <select id="prefSource" class="language-options"></select>
+              </div>
+              <div class="form-group">
+                <label for="prefTarget">Default target language</label>
+                <select id="prefTarget" class="language-options"></select>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3>Audio preferences</h3>
+            <div class="preference-row">
+              <div>
+                <strong>Automatic audio playback</strong>
+                <p>Play generated audio automatically when supported.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="prefAutoplay">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-group speed-control">
+              <label for="prefSpeed">Speech speed: <strong id="speedValue">1.0x</strong></label>
+              <input type="range" id="prefSpeed" min="0.5" max="2" step="0.1" value="1">
+            </div>
+
+            <button class="primary-button" id="savePreferences">Save preferences</button>
+          </div>
+
+          <div class="panel privacy-panel">
+            <h3>Local data</h3>
+            <p>History, saved results and preferences are stored in this browser. They are not automatically synchronized across devices.</p>
+            <button class="secondary-button" id="clearLocalData">Clear local TalkBridge data</button>
+          </div>
+        </section>
+
+      </div>
+
+      <footer class="app-footer">
+        <span>TalkBridge 2.0</span>
+        <span>Speak without limits.</span>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="busy-overlay hidden" id="busyOverlay">
+    <div class="busy-card">
+      <div class="loader"></div>
+      <strong id="busyTitle">Working on it...</strong>
+      <span id="busyMessage">Please wait.</span>
     </div>
+  </div>
 
-
-    <!-- LOADING -->
-    <div
-        class="loading hidden"
-        id="loading"
-    >
-        <div class="spinner"></div>
-        <span id="loadingText">
-            Translating...
-        </span>
-    </div>
-
-
-</div>
-
-<script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
