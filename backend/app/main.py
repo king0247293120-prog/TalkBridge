@@ -1,6 +1,8 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+
 from app.routers.writing import router as writing_router
 from app.routers.documents import router as documents_router
 from app.core.config import settings
@@ -9,11 +11,28 @@ from app.database.init_db import init_db
 from app.routers.translation import router as translation_router
 from app.routers.image import router as image_router
 from app.routers.speech import router as speech_router
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description=settings.DESCRIPTION,
 )
+
+
+def get_database_name():
+    database_type = engine.dialect.name
+
+    database_names = {
+        "postgresql": "PostgreSQL",
+        "sqlite": "SQLite",
+    }
+
+    return database_names.get(
+        database_type,
+        database_type.capitalize(),
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,11 +41,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 app.include_router(speech_router)
 app.include_router(documents_router)
 app.include_router(translation_router)
 app.include_router(image_router)
 app.include_router(writing_router)
+
+
 @app.on_event("startup")
 def startup_event():
     init_db()
@@ -41,7 +64,7 @@ def home():
         "status": "online",
         "message": "Welcome to TalkBridge 2.0",
         "ai_provider": "Open-source models",
-        "database": "SQLite",
+        "database": get_database_name(),
         "features": [
             "Translation Intelligence",
             "Image Intelligence",
@@ -69,13 +92,13 @@ def database_health():
 
         return {
             "status": "connected",
-            "database": "SQLite",
+            "database": get_database_name(),
             "message": "Database connection successful.",
         }
 
     except Exception as error:
         return {
             "status": "error",
-            "database": "SQLite",
+            "database": get_database_name(),
             "message": str(error),
         }
